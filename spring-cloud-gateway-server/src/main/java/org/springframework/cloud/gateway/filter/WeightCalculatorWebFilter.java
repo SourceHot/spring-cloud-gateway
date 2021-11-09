@@ -47,6 +47,7 @@ import org.springframework.web.server.WebFilterChain;
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.WEIGHT_ATTR;
 
 /**
+ * 权重计算过滤器
  * @author Spencer Gibb
  * @author Alexey Nakidkin
  */
@@ -219,6 +220,7 @@ public class WeightCalculatorWebFilter implements WebFilter, Ordered, SmartAppli
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+		// 请求进入的第一个入口
 		Map<String, String> weights = getWeights(exchange);
 
 		for (String group : groupWeights.keySet()) {
