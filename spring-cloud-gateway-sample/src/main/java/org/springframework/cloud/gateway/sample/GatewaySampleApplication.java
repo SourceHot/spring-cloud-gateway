@@ -55,9 +55,6 @@ public class GatewaySampleApplication {
 
 	@Bean
 	public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
-		//@formatter:off
-		// String uri = "http://httpbin.org:80";
-		// String uri = "http://localhost:9080";
 		return builder.routes()
 				.route(r -> r.host("**.abc.org").and().path("/anything/png")
 					.filters(f ->
