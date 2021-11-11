@@ -169,6 +169,7 @@ import static org.springframework.cloud.gateway.config.HttpClientProperties.Pool
 import static org.springframework.cloud.gateway.config.HttpClientProperties.Pool.PoolType.FIXED;
 
 /**
+ * 网关自动装配
  * @author Spencer Gibb
  * @author Ziemowit Stolarczyk
  * @author Mete Alpaslan Katırcıoğlu

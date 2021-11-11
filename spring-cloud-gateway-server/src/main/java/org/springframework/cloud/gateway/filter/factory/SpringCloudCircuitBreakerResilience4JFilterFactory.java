@@ -27,6 +27,7 @@ import org.springframework.web.reactive.DispatcherHandler;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
+ * 熔断过滤器工厂
  * @author Ryan Baxter
  */
 public class SpringCloudCircuitBreakerResilience4JFilterFactory extends SpringCloudCircuitBreakerFilterFactory {
@@ -37,6 +38,9 @@ public class SpringCloudCircuitBreakerResilience4JFilterFactory extends SpringCl
 		super(reactiveCircuitBreakerFactory, dispatcherHandlerProvider);
 	}
 
+	/**
+	 * 处理没有回退的错误
+	 */
 	@Override
 	protected Mono<Void> handleErrorWithoutFallback(Throwable t) {
 		if (java.util.concurrent.TimeoutException.class.isInstance(t)) {

@@ -20,6 +20,9 @@ import java.util.Map;
 
 import org.springframework.context.ApplicationEvent;
 
+/**
+ * 参数过滤事件
+ */
 public class FilterArgsEvent extends ApplicationEvent {
 
 	private final Map<String, Object> args;

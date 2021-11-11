@@ -20,6 +20,9 @@ import java.util.Map;
 
 import org.springframework.context.ApplicationEvent;
 
+/**
+ * 谓词参数事件
+ */
 public class PredicateArgsEvent extends ApplicationEvent {
 
 	private final Map<String, Object> args;

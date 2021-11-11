@@ -27,6 +27,7 @@ import static java.util.Collections.singletonList;
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.CIRCUITBREAKER_EXECUTION_EXCEPTION_ATTR;
 
 /**
+ * 回退头过滤器工厂
  * @author Olga Maciaszek-Sharma
  * @author Ryan Baxter
  */

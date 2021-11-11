@@ -38,6 +38,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.DispatcherHandler;
 
+/**
+ * 网关指标相关内容的自动装配。
+ */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = GatewayProperties.PREFIX + ".enabled", matchIfMissing = true)
 @EnableConfigurationProperties(GatewayMetricsProperties.class)

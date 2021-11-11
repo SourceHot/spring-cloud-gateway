@@ -27,6 +27,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.cloud.gateway.support.MvcFoundOnClasspathException;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 网关类路径异常相关的自动装配
+ */
 @Configuration(proxyBeanMethods = false)
 @AutoConfigureBefore(GatewayAutoConfiguration.class)
 @ConditionalOnProperty(name = "spring.cloud.gateway.enabled", matchIfMissing = true)

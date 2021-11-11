@@ -24,6 +24,7 @@ import org.springframework.web.server.ServerWebExchange;
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR;
 
 /**
+ * 网关路由标签提供程序
  * @author Ingyu Hwang
  */
 public class GatewayRouteTagsProvider implements GatewayTagsProvider {

@@ -39,6 +39,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.G
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_SCHEME_PREFIX_ATTR;
 
 /**
+ * 进行无负载均衡相关的客户端配置。
  * @author Spencer Gibb
  */
 @Configuration(proxyBeanMethods = false)
@@ -55,7 +56,9 @@ public class GatewayNoLoadBalancerClientAutoConfiguration {
 	}
 
 	protected static class NoLoadBalancerClientFilter implements GlobalFilter, Ordered {
-
+		/**
+		 * 是否使用404
+		 */
 		private final boolean use404;
 
 		public NoLoadBalancerClientFilter(boolean use404) {
@@ -67,15 +70,25 @@ public class GatewayNoLoadBalancerClientAutoConfiguration {
 			return LOAD_BALANCER_CLIENT_FILTER_ORDER;
 		}
 
+		/**
+		 *
+		 * @param exchange the current server exchange 服务网络交换器
+		 * @param chain provides a way to delegate to the next filter
+		 * @return
+		 */
 		@Override
 		@SuppressWarnings("Duplicates")
 		public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+			// 从服务网络交换器中获取GATEWAY_REQUEST_URL_ATTR属性
 			URI url = exchange.getAttribute(GATEWAY_REQUEST_URL_ATTR);
+			// 从服务网络交换器中获取GATEWAY_SCHEME_PREFIX_ATTR属性
 			String schemePrefix = exchange.getAttribute(GATEWAY_SCHEME_PREFIX_ATTR);
+			// 如果GATEWAY_REQUEST_URL_ATTR属性为空或者同时满足GATEWAY_REQUEST_URL_ATTR属性的方案不是lb、方案前缀不是lb
 			if (url == null || (!"lb".equals(url.getScheme()) && !"lb".equals(schemePrefix))) {
 				return chain.filter(exchange);
 			}
 
+			// 抛出异常
 			throw NotFoundException.create(use404, "Unable to find instance for " + url.getHost());
 		}
 

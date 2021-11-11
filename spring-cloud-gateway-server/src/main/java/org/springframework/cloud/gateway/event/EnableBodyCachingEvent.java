@@ -18,6 +18,9 @@ package org.springframework.cloud.gateway.event;
 
 import org.springframework.context.ApplicationEvent;
 
+/**
+ * 启用正文缓存事件
+ */
 public class EnableBodyCachingEvent extends ApplicationEvent {
 
 	private final String routeId;

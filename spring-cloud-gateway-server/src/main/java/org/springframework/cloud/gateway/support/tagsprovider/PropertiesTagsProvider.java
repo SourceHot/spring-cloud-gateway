@@ -25,6 +25,7 @@ import io.micrometer.core.instrument.Tags;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
+ * 属性标签提供程序
  * @author Ingyu Hwang
  */
 public class PropertiesTagsProvider implements GatewayTagsProvider {

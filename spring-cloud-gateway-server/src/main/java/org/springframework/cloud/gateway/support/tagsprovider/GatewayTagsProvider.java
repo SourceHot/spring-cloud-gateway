@@ -24,6 +24,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
+ * 网关标签提供器
  * @author Ingyu Hwang
  */
 public interface GatewayTagsProvider extends Function<ServerWebExchange, Tags> {

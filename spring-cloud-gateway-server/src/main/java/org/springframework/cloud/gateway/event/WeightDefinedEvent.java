@@ -19,6 +19,9 @@ package org.springframework.cloud.gateway.event;
 import org.springframework.cloud.gateway.support.WeightConfig;
 import org.springframework.context.ApplicationEvent;
 
+/**
+ * 权重定义事件
+ */
 public class WeightDefinedEvent extends ApplicationEvent {
 
 	private final WeightConfig weightConfig;
