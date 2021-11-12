@@ -34,6 +34,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.G
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.containsEncodedParts;
 
 /**
+ * 作用：根据路由计算请求的Url
  * @author Spencer Gibb
  */
 public class RouteToRequestUrlFilter implements GlobalFilter, Ordered {

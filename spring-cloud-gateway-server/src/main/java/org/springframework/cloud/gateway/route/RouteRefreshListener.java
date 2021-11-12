@@ -29,6 +29,9 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.util.Assert;
 
+/**
+ * 路由刷新监听器
+ */
 // see ZuulDiscoveryRefreshListener
 // TODO: make abstract class in commons?
 public class RouteRefreshListener implements ApplicationListener<ApplicationEvent> {

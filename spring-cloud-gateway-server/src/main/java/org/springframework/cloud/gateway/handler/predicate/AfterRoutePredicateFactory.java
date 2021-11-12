@@ -26,6 +26,7 @@ import javax.validation.constraints.NotNull;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
+ * 后置路由谓词工厂
  * @author Spencer Gibb
  */
 public class AfterRoutePredicateFactory extends AbstractRoutePredicateFactory<AfterRoutePredicateFactory.Config> {

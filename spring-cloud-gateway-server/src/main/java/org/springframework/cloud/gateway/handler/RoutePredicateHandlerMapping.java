@@ -36,6 +36,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.G
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR;
 
 /**
+ * 路由和谓词的处理器
  * @author Spencer Gibb
  */
 public class RoutePredicateHandlerMapping extends AbstractHandlerMapping {

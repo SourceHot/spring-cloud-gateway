@@ -28,6 +28,7 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
+ * 路由定位构造器
  * Used to build a {@link RouteLocator}.
  */
 public class RouteLocatorBuilder {

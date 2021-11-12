@@ -19,6 +19,7 @@ package org.springframework.cloud.gateway.route;
 import reactor.core.publisher.Flux;
 
 /**
+ * 复合路径定位器
  * @author Spencer Gibb
  */
 public class CompositeRouteLocator implements RouteLocator {

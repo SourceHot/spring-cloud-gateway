@@ -26,6 +26,9 @@ import org.springframework.web.server.ServerWebExchange;
 
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.CACHED_REQUEST_BODY_ATTR;
 
+/**
+ * 用于删除缓存请求体过滤器
+ */
 public class RemoveCachedBodyFilter implements GlobalFilter, Ordered {
 
 	private static final Log log = LogFactory.getLog(RemoveCachedBodyFilter.class);

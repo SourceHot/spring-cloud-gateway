@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
+ * 前置路由谓词工厂
  * @author Spencer Gibb
  */
 public class BeforeRoutePredicateFactory extends AbstractRoutePredicateFactory<BeforeRoutePredicateFactory.Config> {

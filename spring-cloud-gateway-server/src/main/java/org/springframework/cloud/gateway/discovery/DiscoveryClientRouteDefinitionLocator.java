@@ -43,6 +43,7 @@ import org.springframework.util.StringUtils;
 /**
  * TODO: change to RouteLocator? use java dsl
  *
+ * 服务发现路由定位器
  * @author Spencer Gibb
  */
 public class DiscoveryClientRouteDefinitionLocator implements RouteDefinitionLocator {

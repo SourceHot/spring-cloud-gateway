@@ -35,6 +35,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 
 /**
+ * 基于缓存的路由定位器
  * @author Spencer Gibb
  */
 public class CachingRouteLocator

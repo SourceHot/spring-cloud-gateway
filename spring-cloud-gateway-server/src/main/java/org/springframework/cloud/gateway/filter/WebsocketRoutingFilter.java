@@ -48,6 +48,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.i
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.setAlreadyRouted;
 
 /**
+ * WebSocketService路由过滤器
  * @author Spencer Gibb
  * @author Nikita Konev
  */
