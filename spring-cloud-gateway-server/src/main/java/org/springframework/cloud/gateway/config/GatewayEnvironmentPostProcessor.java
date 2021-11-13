@@ -27,6 +27,7 @@ public class GatewayEnvironmentPostProcessor implements EnvironmentPostProcessor
 
 	@Override
 	public void postProcessEnvironment(ConfigurableEnvironment env, SpringApplication application) {
+		// 从环境对象中获取属性源，向头部插入数据
 		env.getPropertySources().addFirst(new MapPropertySource("gateway-properties",
 				Collections.singletonMap("spring.webflux.hiddenmethod.filter.enabled", "false")));
 	}
