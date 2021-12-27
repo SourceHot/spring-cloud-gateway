@@ -28,16 +28,26 @@ import org.springframework.cloud.gateway.event.RefreshRoutesEvent;
 import org.springframework.context.ApplicationListener;
 
 /**
+ * 带有缓存的路由定义加载器
  * @author Spencer Gibb
  */
 public class CachingRouteDefinitionLocator implements RouteDefinitionLocator, ApplicationListener<RefreshRoutesEvent> {
 
 	private static final String CACHE_KEY = "routeDefs";
 
+	/**
+	 * 路由定义加载器
+	 */
 	private final RouteDefinitionLocator delegate;
 
+	/**
+	 * 路由定义集合
+	 */
 	private final Flux<RouteDefinition> routeDefinitions;
 
+	/**
+	 * 缓存容器
+	 */
 	private final Map<String, List> cache = new ConcurrentHashMap<>();
 
 	public CachingRouteDefinitionLocator(RouteDefinitionLocator delegate) {
@@ -59,12 +69,16 @@ public class CachingRouteDefinitionLocator implements RouteDefinitionLocator, Ap
 	 * @return routeDefinitions flux
 	 */
 	public Flux<RouteDefinition> refresh() {
+		// 清除当前缓存
 		this.cache.clear();
+		// 返回路由定义集合
 		return this.routeDefinitions;
 	}
 
 	@Override
 	public void onApplicationEvent(RefreshRoutesEvent event) {
+		// 获取路由定义集合
+		// 将路由定义遍历后写入到缓存容器
 		fetch().materialize().collect(Collectors.toList()).doOnNext(routes -> cache.put(CACHE_KEY, routes)).subscribe();
 	}
 

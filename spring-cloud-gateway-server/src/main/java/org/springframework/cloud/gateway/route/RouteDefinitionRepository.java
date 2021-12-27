@@ -17,6 +17,7 @@
 package org.springframework.cloud.gateway.route;
 
 /**
+ * 路由定义仓库
  * @author Spencer Gibb
  */
 public interface RouteDefinitionRepository extends RouteDefinitionLocator, RouteDefinitionWriter {

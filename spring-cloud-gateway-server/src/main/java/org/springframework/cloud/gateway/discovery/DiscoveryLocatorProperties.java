@@ -24,6 +24,9 @@ import org.springframework.cloud.gateway.filter.FilterDefinition;
 import org.springframework.cloud.gateway.handler.predicate.PredicateDefinition;
 import org.springframework.core.style.ToStringCreator;
 
+/**
+ * 网关的服务发现定位器属性
+ */
 @ConfigurationProperties("spring.cloud.gateway.discovery.locator")
 public class DiscoveryLocatorProperties {
 

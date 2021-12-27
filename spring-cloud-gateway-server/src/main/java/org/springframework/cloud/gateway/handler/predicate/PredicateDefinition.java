@@ -29,6 +29,7 @@ import org.springframework.validation.annotation.Validated;
 import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
 /**
+ * 谓词定义集合
  * @author Spencer Gibb
  */
 @Validated

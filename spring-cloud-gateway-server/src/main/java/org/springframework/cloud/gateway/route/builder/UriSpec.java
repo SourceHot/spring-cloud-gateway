@@ -24,6 +24,7 @@ import org.springframework.cloud.gateway.route.Route;
 
 /**
  * A specification to add a URI to a route.
+ * uri标准器。
  */
 public class UriSpec {
 

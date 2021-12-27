@@ -27,6 +27,9 @@ import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
  */
 public class PropertiesRouteDefinitionLocator implements RouteDefinitionLocator {
 
+	/**
+	 * 网关属性配置类
+	 */
 	private final GatewayProperties properties;
 
 	public PropertiesRouteDefinitionLocator(GatewayProperties properties) {

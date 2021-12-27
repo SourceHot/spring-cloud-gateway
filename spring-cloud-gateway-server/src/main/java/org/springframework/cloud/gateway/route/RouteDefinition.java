@@ -35,25 +35,44 @@ import org.springframework.validation.annotation.Validated;
 import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
 /**
+ * 路由定义对象
  * @author Spencer Gibb
  */
 @Validated
 public class RouteDefinition {
 
+	/**
+	 * id
+	 */
 	private String id;
 
+	/**
+	 * 谓词定义集合
+	 */
 	@NotEmpty
 	@Valid
 	private List<PredicateDefinition> predicates = new ArrayList<>();
 
+	/**
+	 * 过滤器定义集合
+	 */
 	@Valid
 	private List<FilterDefinition> filters = new ArrayList<>();
 
+	/**
+	 * 路由地址
+	 */
 	@NotNull
 	private URI uri;
 
+	/***
+	 * 元数据
+	 */
 	private Map<String, Object> metadata = new HashMap<>();
 
+	/**
+	 * 序号
+	 */
 	private int order = 0;
 
 	public RouteDefinition() {

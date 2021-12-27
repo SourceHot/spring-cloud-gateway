@@ -28,6 +28,7 @@ import org.springframework.web.server.ServerWebExchange;
  *
  * Copied from WebFilter
  *
+ * 网关过滤器
  * @author Rossen Stoyanchev
  * @since 5.0
  */

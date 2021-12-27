@@ -28,12 +28,19 @@ import org.springframework.util.ObjectUtils;
 import static java.util.Collections.synchronizedMap;
 
 /**
+ * 基于内存的路由定义仓库
  * @author Spencer Gibb
  */
 public class InMemoryRouteDefinitionRepository implements RouteDefinitionRepository {
 
+	/**
+	 * 路由定义容器
+	 */
 	private final Map<String, RouteDefinition> routes = synchronizedMap(new LinkedHashMap<String, RouteDefinition>());
 
+	/**
+	 * 保存
+	 */
 	@Override
 	public Mono<Void> save(Mono<RouteDefinition> route) {
 		return route.flatMap(r -> {
@@ -45,6 +52,9 @@ public class InMemoryRouteDefinitionRepository implements RouteDefinitionReposit
 		});
 	}
 
+	/**
+	 * 删除
+	 */
 	@Override
 	public Mono<Void> delete(Mono<String> routeId) {
 		return routeId.flatMap(id -> {
@@ -56,6 +66,10 @@ public class InMemoryRouteDefinitionRepository implements RouteDefinitionReposit
 		});
 	}
 
+	/**
+	 * 获取路由定义集合
+	 * @return
+	 */
 	@Override
 	public Flux<RouteDefinition> getRouteDefinitions() {
 		return Flux.fromIterable(routes.values());

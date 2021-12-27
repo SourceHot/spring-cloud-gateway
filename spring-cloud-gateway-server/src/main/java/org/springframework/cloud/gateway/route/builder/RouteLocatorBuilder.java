@@ -33,6 +33,9 @@ import org.springframework.context.ConfigurableApplicationContext;
  */
 public class RouteLocatorBuilder {
 
+	/**
+	 * 应用上下文
+	 */
 	private ConfigurableApplicationContext context;
 
 	public RouteLocatorBuilder(ConfigurableApplicationContext context) {

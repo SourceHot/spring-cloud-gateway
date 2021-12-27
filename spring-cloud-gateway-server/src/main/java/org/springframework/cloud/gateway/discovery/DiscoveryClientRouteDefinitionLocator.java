@@ -49,13 +49,21 @@ import org.springframework.util.StringUtils;
 public class DiscoveryClientRouteDefinitionLocator implements RouteDefinitionLocator {
 
 	private static final Log log = LogFactory.getLog(DiscoveryClientRouteDefinitionLocator.class);
-
+	/**
+	 * 网关的服务发现定位器属性
+	 */
 	private final DiscoveryLocatorProperties properties;
-
+	/**
+	 * 路由id的前缀
+	 */
 	private final String routeIdPrefix;
-
+	/**
+	 * 评估上下文
+	 */
 	private final SimpleEvaluationContext evalCtxt;
-
+	/**
+	 * 服务实例集合
+	 */
 	private Flux<List<ServiceInstance>> serviceInstances;
 
 	public DiscoveryClientRouteDefinitionLocator(ReactiveDiscoveryClient discoveryClient,
@@ -79,8 +87,11 @@ public class DiscoveryClientRouteDefinitionLocator implements RouteDefinitionLoc
 	@Override
 	public Flux<RouteDefinition> getRouteDefinitions() {
 
+		// 创建spring-el表达式解析器
 		SpelExpressionParser parser = new SpelExpressionParser();
+		// 解析includeExpression数据
 		Expression includeExpr = parser.parseExpression(properties.getIncludeExpression());
+		// 解析urlExpression数据
 		Expression urlExpr = parser.parseExpression(properties.getUrlExpression());
 
 		Predicate<ServiceInstance> includePredicate;
@@ -97,29 +108,45 @@ public class DiscoveryClientRouteDefinitionLocator implements RouteDefinitionLoc
 			};
 		}
 
-		return serviceInstances.filter(instances -> !instances.isEmpty()).map(instances -> instances.get(0))
+		return serviceInstances.filter(instances -> !instances.isEmpty())
+				.map(instances -> instances.get(0))
 				.filter(includePredicate).map(instance -> {
+					// 创建路由定义对象
 					RouteDefinition routeDefinition = buildRouteDefinition(urlExpr, instance);
 
-					final ServiceInstance instanceForEval = new DelegatingServiceInstance(instance, properties);
+					// 创建服务实例
+					final ServiceInstance instanceForEval = new DelegatingServiceInstance(instance,
+							properties);
 
+					// 获取谓词定义集合
 					for (PredicateDefinition original : this.properties.getPredicates()) {
+						// 创建谓词定义
 						PredicateDefinition predicate = new PredicateDefinition();
+						// 设置名称
 						predicate.setName(original.getName());
+						// 将配置表中的谓词定义转换到谓词定义中
 						for (Map.Entry<String, String> entry : original.getArgs().entrySet()) {
-							String value = getValueFromExpr(evalCtxt, parser, instanceForEval, entry);
+							String value = getValueFromExpr(evalCtxt, parser, instanceForEval,
+									entry);
 							predicate.addArg(entry.getKey(), value);
 						}
+						// 将转换后的谓词定义放入到路由定义中
 						routeDefinition.getPredicates().add(predicate);
 					}
 
+					// 获取过滤器定义集合
 					for (FilterDefinition original : this.properties.getFilters()) {
+						// 创建过滤器定义
 						FilterDefinition filter = new FilterDefinition();
+						// 设置过滤器定义名称
 						filter.setName(original.getName());
+						// 将配置表中的过滤器定义转换到过滤器定义中
 						for (Map.Entry<String, String> entry : original.getArgs().entrySet()) {
-							String value = getValueFromExpr(evalCtxt, parser, instanceForEval, entry);
+							String value = getValueFromExpr(evalCtxt, parser, instanceForEval,
+									entry);
 							filter.addArg(entry.getKey(), value);
 						}
+						// 将转换后的过滤器定义放入到路由定义中
 						routeDefinition.getFilters().add(filter);
 					}
 
@@ -127,13 +154,20 @@ public class DiscoveryClientRouteDefinitionLocator implements RouteDefinitionLoc
 				});
 	}
 
-	protected RouteDefinition buildRouteDefinition(Expression urlExpr, ServiceInstance serviceInstance) {
+	protected RouteDefinition buildRouteDefinition(Expression urlExpr,
+			ServiceInstance serviceInstance) {
+		// 获取服务id
 		String serviceId = serviceInstance.getServiceId();
+		// 创建路由定义对象
 		RouteDefinition routeDefinition = new RouteDefinition();
+		// 设置id，设置规则是前缀+服务id
 		routeDefinition.setId(this.routeIdPrefix + serviceId);
+		// 解析url表达式
 		String uri = urlExpr.getValue(this.evalCtxt, serviceInstance, String.class);
+		// 设置路由地址
 		routeDefinition.setUri(URI.create(uri));
 		// add instance metadata
+		// 补充路由定义对象中的元信息
 		routeDefinition.setMetadata(new LinkedHashMap<>(serviceInstance.getMetadata()));
 		return routeDefinition;
 	}
@@ -154,8 +188,14 @@ public class DiscoveryClientRouteDefinitionLocator implements RouteDefinitionLoc
 
 	private static class DelegatingServiceInstance implements ServiceInstance {
 
+		/**
+		 * 服务实例
+		 */
 		final ServiceInstance delegate;
 
+		/**
+		 * 网关的服务发现定位器属性
+		 */
 		private final DiscoveryLocatorProperties properties;
 
 		private DelegatingServiceInstance(ServiceInstance delegate, DiscoveryLocatorProperties properties) {

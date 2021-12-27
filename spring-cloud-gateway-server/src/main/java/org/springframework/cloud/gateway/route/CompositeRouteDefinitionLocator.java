@@ -26,14 +26,21 @@ import org.springframework.util.AlternativeJdkIdGenerator;
 import org.springframework.util.IdGenerator;
 
 /**
+ * 复合的路由定义加载器
  * @author Spencer Gibb
  */
 public class CompositeRouteDefinitionLocator implements RouteDefinitionLocator {
 
 	private static final Log log = LogFactory.getLog(CompositeRouteDefinitionLocator.class);
 
+	/**
+	 * 路由定义加载器
+	 */
 	private final Flux<RouteDefinitionLocator> delegates;
 
+	/**
+	 * id生成器
+	 */
 	private final IdGenerator idGenerator;
 
 	public CompositeRouteDefinitionLocator(Flux<RouteDefinitionLocator> delegates) {
