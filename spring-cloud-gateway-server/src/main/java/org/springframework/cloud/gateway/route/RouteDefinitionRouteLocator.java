@@ -51,19 +51,37 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 
 	/**
 	 * Default filters name.
+	 *
+	 * 默认过滤器名称
 	 */
 	public static final String DEFAULT_FILTERS = "defaultFilters";
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/**
+	 * 路由定义加载器
+	 */
 	private final RouteDefinitionLocator routeDefinitionLocator;
 
+	/**
+	 * 配置服务
+	 */
 	private final ConfigurationService configurationService;
 
+
+	/**
+	 * 路由谓词工厂集合
+	 */
 	private final Map<String, RoutePredicateFactory> predicates = new LinkedHashMap<>();
 
+	/**
+	 * 网关过滤器工厂集合
+	 */
 	private final Map<String, GatewayFilterFactory> gatewayFilterFactories = new HashMap<>();
 
+	/**
+	 * 网关配置
+	 */
 	private final GatewayProperties gatewayProperties;
 
 	public RouteDefinitionRouteLocator(RouteDefinitionLocator routeDefinitionLocator,
@@ -76,6 +94,10 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 		this.gatewayProperties = gatewayProperties;
 	}
 
+	/**
+	 * 初始化工厂
+	 * @param predicates
+	 */
 	private void initFactories(List<RoutePredicateFactory> predicates) {
 		predicates.forEach(factory -> {
 			String key = factory.name();
@@ -83,6 +105,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 				this.logger.warn("A RoutePredicateFactory named " + key + " already exists, class: "
 						+ this.predicates.get(key) + ". It will be overwritten.");
 			}
+			// 路由谓词工厂集合, key:工厂名称,value:工厂
 			this.predicates.put(key, factory);
 			if (logger.isInfoEnabled()) {
 				logger.info("Loaded RoutePredicateFactory [" + key + "]");
@@ -92,6 +115,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 
 	@Override
 	public Flux<Route> getRoutes() {
+		// 通过路由定义加载器获取路由定义对象并且转换为路由对象
 		Flux<Route> routes = this.routeDefinitionLocator.getRouteDefinitions().map(this::convertToRoute);
 
 		if (!gatewayProperties.isFailOnRouteDefinitionError()) {
@@ -112,25 +136,38 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 		});
 	}
 
+	/**
+	 * 路由定义对象转换为路由对象
+	 */
 	private Route convertToRoute(RouteDefinition routeDefinition) {
+		// 将路由定义对象中的谓词进行组合
 		AsyncPredicate<ServerWebExchange> predicate = combinePredicates(routeDefinition);
+		// 获取路由定义中的网关过滤器集合
 		List<GatewayFilter> gatewayFilters = getFilters(routeDefinition);
 
-		return Route.async(routeDefinition).asyncPredicate(predicate).replaceFilters(gatewayFilters).build();
+		// 组装路由对象
+		return Route.async(routeDefinition).asyncPredicate(predicate).replaceFilters(gatewayFilters)
+				.build();
 	}
 
 	@SuppressWarnings("unchecked")
 	List<GatewayFilter> loadGatewayFilters(String id, List<FilterDefinition> filterDefinitions) {
+		// 创建网关过滤器集合
 		ArrayList<GatewayFilter> ordered = new ArrayList<>(filterDefinitions.size());
+		// 循环过滤器定义集合
 		for (int i = 0; i < filterDefinitions.size(); i++) {
+			// 获取需要处理的过滤器定义
 			FilterDefinition definition = filterDefinitions.get(i);
+			// 从网关过滤器工厂集合中找到对应的网关过滤器工厂
 			GatewayFilterFactory factory = this.gatewayFilterFactories.get(definition.getName());
+			// 如果为空抛出异常
 			if (factory == null) {
 				throw new IllegalArgumentException(
 						"Unable to find GatewayFilterFactory with name " + definition.getName());
 			}
 			if (logger.isDebugEnabled()) {
-				logger.debug("RouteDefinition " + id + " applying filter " + definition.getArgs() + " to "
+				logger.debug("RouteDefinition " + id + " applying filter " + definition.getArgs()
+						+ " to "
 						+ definition.getName());
 			}
 
@@ -154,8 +191,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 			GatewayFilter gatewayFilter = factory.apply(configuration);
 			if (gatewayFilter instanceof Ordered) {
 				ordered.add(gatewayFilter);
-			}
-			else {
+			} else {
 				ordered.add(new OrderedGatewayFilter(gatewayFilter, i + 1));
 			}
 		}

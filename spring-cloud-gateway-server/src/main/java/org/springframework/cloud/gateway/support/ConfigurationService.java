@@ -44,14 +44,29 @@ import org.springframework.validation.Validator;
 
 public class ConfigurationService implements ApplicationEventPublisherAware {
 
+	/**
+	 * 事件推送器
+	 */
 	private ApplicationEventPublisher publisher;
 
+	/**
+	 * bean工厂
+	 */
 	private BeanFactory beanFactory;
 
+	/**
+	 * 转换服务
+	 */
 	private Supplier<ConversionService> conversionService;
 
+	/**
+	 * spring-el表达式解析器
+	 */
 	private SpelExpressionParser parser = new SpelExpressionParser();
 
+	/**
+	 * 验证器
+	 */
 	private Supplier<Validator> validator;
 
 	public ConfigurationService(BeanFactory beanFactory, ObjectProvider<ConversionService> conversionService,
