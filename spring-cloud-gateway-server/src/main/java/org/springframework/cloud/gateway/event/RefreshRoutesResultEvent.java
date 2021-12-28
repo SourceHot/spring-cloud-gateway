@@ -24,6 +24,9 @@ import org.springframework.context.ApplicationEvent;
  */
 public class RefreshRoutesResultEvent extends ApplicationEvent {
 
+	/**
+	 * 异常信息
+	 */
 	private Throwable throwable;
 
 	public RefreshRoutesResultEvent(Object source, Throwable throwable) {

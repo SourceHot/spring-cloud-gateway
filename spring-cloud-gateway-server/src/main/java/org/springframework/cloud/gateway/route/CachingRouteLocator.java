@@ -43,12 +43,24 @@ public class CachingRouteLocator
 
 	private static final Log log = LogFactory.getLog(CachingRouteLocator.class);
 
+	/**
+	 * 路由键
+	 */
 	private static final String CACHE_KEY = "routes";
 
+	/**
+	 * 路由定位器
+	 */
 	private final RouteLocator delegate;
 
+	/**
+	 * 路由集合
+	 */
 	private final Flux<Route> routes;
 
+	/**
+	 * 路由缓存
+	 */
 	private final Map<String, List> cache = new ConcurrentHashMap<>();
 
 	private ApplicationEventPublisher applicationEventPublisher;
@@ -79,6 +91,8 @@ public class CachingRouteLocator
 	@Override
 	public void onApplicationEvent(RefreshRoutesEvent event) {
 		try {
+			// 获取路由集合后推送RefreshRoutesResultEvent事件并将其放入到缓存容器中，在整个处理过程中如果出现异常则推送RefreshRoutesResultEvent事件，
+			// 在推送RefreshRoutesResultEvent事件的时候会携带异常信息
 			fetch().collect(Collectors.toList()).subscribe(
 					list -> Flux.fromIterable(list).materialize().collect(Collectors.toList()).subscribe(signals -> {
 						applicationEventPublisher.publishEvent(new RefreshRoutesResultEvent(this));

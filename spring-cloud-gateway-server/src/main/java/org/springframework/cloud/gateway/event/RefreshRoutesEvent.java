@@ -16,11 +16,18 @@
 
 package org.springframework.cloud.gateway.event;
 
+import org.springframework.cloud.gateway.filter.WeightCalculatorWebFilter;
+import org.springframework.cloud.gateway.route.CachingRouteDefinitionLocator;
+import org.springframework.cloud.gateway.route.CachingRouteLocator;
 import org.springframework.context.ApplicationEvent;
 
 /**
  * 刷新路由事件
+ *
  * @author Spencer Gibb
+ * @see WeightCalculatorWebFilter#onApplicationEvent(org.springframework.context.ApplicationEvent)
+ * @see CachingRouteLocator#onApplicationEvent(org.springframework.cloud.gateway.event.RefreshRoutesEvent)
+ * @see CachingRouteDefinitionLocator#onApplicationEvent(org.springframework.cloud.gateway.event.RefreshRoutesEvent)
  */
 public class RefreshRoutesEvent extends ApplicationEvent {
 

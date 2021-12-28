@@ -39,6 +39,9 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.G
  */
 public class AdaptCachedBodyGlobalFilter implements GlobalFilter, Ordered, ApplicationListener<EnableBodyCachingEvent> {
 
+	/**
+	 * 用于存储路由id和是否缓存的标记
+	 */
 	private ConcurrentMap<String, Boolean> routesToCache = new ConcurrentHashMap<>();
 
 	@Override

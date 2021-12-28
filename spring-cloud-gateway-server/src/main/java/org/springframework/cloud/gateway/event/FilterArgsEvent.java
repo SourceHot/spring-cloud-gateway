@@ -18,15 +18,23 @@ package org.springframework.cloud.gateway.event;
 
 import java.util.Map;
 
+import org.springframework.cloud.gateway.filter.ratelimit.AbstractRateLimiter;
 import org.springframework.context.ApplicationEvent;
 
 /**
  * 参数过滤事件
+ * @see AbstractRateLimiter#onApplicationEvent(org.springframework.cloud.gateway.event.FilterArgsEvent)
  */
 public class FilterArgsEvent extends ApplicationEvent {
 
+	/**
+	 * 参数
+	 */
 	private final Map<String, Object> args;
 
+	/**
+	 * 路由id
+	 */
 	private String routeId;
 
 	public FilterArgsEvent(Object source, String routeId, Map<String, Object> args) {

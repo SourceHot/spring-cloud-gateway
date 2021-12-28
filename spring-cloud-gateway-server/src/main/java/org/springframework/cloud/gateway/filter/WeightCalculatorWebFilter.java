@@ -60,16 +60,35 @@ public class WeightCalculatorWebFilter implements WebFilter, Ordered, SmartAppli
 
 	private static final Log log = LogFactory.getLog(WeightCalculatorWebFilter.class);
 
+	/**
+	 * 路由定位器
+	 */
 	private final ObjectProvider<RouteLocator> routeLocator;
 
+	/**
+	 * 配置服务
+	 */
 	private final ConfigurationService configurationService;
 
+	/**
+	 * 随机对象
+	 */
 	private Random random = new Random();
 
+	/**
+	 * 序号
+	 */
 	private int order = WEIGHT_CALC_FILTER_ORDER;
 
+	/**
+	 * 组别权重映射表
+	 */
 	private Map<String, GroupWeightConfig> groupWeights = new ConcurrentHashMap<>();
 
+
+	/**
+	 * 路由定位器是否初始化
+	 */
 	private final AtomicBoolean routeLocatorInitialized = new AtomicBoolean();
 
 	public WeightCalculatorWebFilter(ObjectProvider<RouteLocator> routeLocator,
@@ -142,16 +161,17 @@ public class WeightCalculatorWebFilter implements WebFilter, Ordered, SmartAppli
 	}
 
 	public void handle(PredicateArgsEvent event) {
+		// 从事件对象中获取参数对象
 		Map<String, Object> args = event.getArgs();
-
+		// 如果参数对象为空或者不包含weight+"."的键则跳过处理
 		if (args.isEmpty() || !hasRelevantKey(args)) {
 			return;
 		}
-
+		// 创建权重配置
 		WeightConfig config = new WeightConfig(event.getRouteId());
-
+		// 根据权重配置在配置服务中搜索实例设置名称和配置并绑定
 		this.configurationService.with(config).name(WeightConfig.CONFIG_PREFIX).normalizedProperties(args).bind();
-
+		// 添加权重信息
 		addWeightConfig(config);
 	}
 
@@ -159,42 +179,54 @@ public class WeightCalculatorWebFilter implements WebFilter, Ordered, SmartAppli
 		return args.keySet().stream().anyMatch(key -> key.startsWith(WeightConfig.CONFIG_PREFIX + "."));
 	}
 
-	/* for testing */ void addWeightConfig(WeightConfig weightConfig) {
+	void addWeightConfig(WeightConfig weightConfig) {
+		// 提取组别名称
 		String group = weightConfig.getGroup();
+
 		GroupWeightConfig config;
 		// only create new GroupWeightConfig rather than modify
 		// and put at end of calculations. This avoids concurency problems
 		// later during filter execution.
+		// 组别权重映射表中是否包含当前组别，如果包含则直接获取并转换为GroupWeightConfig，反之则创建GroupWeightConfig
 		if (groupWeights.containsKey(group)) {
 			config = new GroupWeightConfig(groupWeights.get(group));
-		}
-		else {
+		} else {
 			config = new GroupWeightConfig(group);
 		}
 
+		// 向组别权重配置中加入当前路由id和权重信息
 		config.weights.put(weightConfig.getRouteId(), weightConfig.getWeight());
 
 		// recalculate
 
 		// normalize weights
+		// 权重和
 		int weightsSum = 0;
 
+		// 计算权重和
 		for (Integer weight : config.weights.values()) {
 			weightsSum += weight;
 		}
 
 		final AtomicInteger index = new AtomicInteger(0);
+		// 对历史权重进行处理
 		for (Map.Entry<String, Integer> entry : config.weights.entrySet()) {
+			// 获取路由id
 			String routeId = entry.getKey();
+			// 获取权重
 			Integer weight = entry.getValue();
+			// 当前权重除以权重和得到占比
 			Double nomalizedWeight = weight / (double) weightsSum;
+			// 设置到归一后的权重表
 			config.normalizedWeights.put(routeId, nomalizedWeight);
 
 			// recalculate rangeIndexes
+			// 设置索引信息
 			config.rangeIndexes.put(index.getAndIncrement(), routeId);
 		}
 
 		// TODO: calculate ranges
+		// 重新计算ranges数据
 		config.ranges.clear();
 
 		config.ranges.add(0.0);
@@ -211,6 +243,7 @@ public class WeightCalculatorWebFilter implements WebFilter, Ordered, SmartAppli
 			log.trace("Recalculated group weight config " + config);
 		}
 		// only update after all calculations
+		// 加入到组别权重信息中
 		groupWeights.put(group, config);
 	}
 
@@ -263,6 +296,11 @@ public class WeightCalculatorWebFilter implements WebFilter, Ordered, SmartAppli
 
 		LinkedHashMap<String, Integer> weights = new LinkedHashMap<>();
 
+		/**
+		 * 归并后的路由权重。
+		 * key:路由id
+		 * value:权重信息
+		 */
 		LinkedHashMap<String, Double> normalizedWeights = new LinkedHashMap<>();
 
 		LinkedHashMap<Integer, String> rangeIndexes = new LinkedHashMap<>();

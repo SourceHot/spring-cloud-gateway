@@ -29,12 +29,20 @@ public class WeightConfig {
 	 * Configuration prefix for {@link WeightConfig}.
 	 */
 	public static final String CONFIG_PREFIX = "weight";
-
+	/**
+	 * 组别名称
+	 */
 	@NotEmpty
 	private String group;
 
+	/**
+	 * 路由id
+	 */
 	private String routeId;
 
+	/**
+	 * 权重
+	 */
 	@Min(0)
 	private int weight;
 

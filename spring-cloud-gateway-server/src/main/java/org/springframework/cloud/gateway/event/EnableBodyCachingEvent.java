@@ -16,10 +16,13 @@
 
 package org.springframework.cloud.gateway.event;
 
+import org.springframework.cloud.gateway.filter.AdaptCachedBodyGlobalFilter;
 import org.springframework.context.ApplicationEvent;
 
 /**
  * 启用正文缓存事件
+ *
+ * @see AdaptCachedBodyGlobalFilter#onApplicationEvent(org.springframework.cloud.gateway.event.EnableBodyCachingEvent)
  */
 public class EnableBodyCachingEvent extends ApplicationEvent {
 

@@ -18,15 +18,23 @@ package org.springframework.cloud.gateway.event;
 
 import java.util.Map;
 
+import org.springframework.cloud.gateway.filter.WeightCalculatorWebFilter;
 import org.springframework.context.ApplicationEvent;
 
 /**
- * 谓词参数事件
+ * 谓词参数处理事件
+ * @see WeightCalculatorWebFilter#onApplicationEvent(org.springframework.context.ApplicationEvent)
  */
 public class PredicateArgsEvent extends ApplicationEvent {
 
+	/**
+	 * 参数集合
+	 */
 	private final Map<String, Object> args;
 
+	/**
+	 * 路由id
+	 */
 	private String routeId;
 
 	public PredicateArgsEvent(Object source, String routeId, Map<String, Object> args) {

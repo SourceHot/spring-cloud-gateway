@@ -47,19 +47,27 @@ public class RouteRefreshListener implements ApplicationListener<ApplicationEven
 
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
+		// 判断事件类型是否是ContextRefreshedEvent
 		if (event instanceof ContextRefreshedEvent) {
 			ContextRefreshedEvent refreshedEvent = (ContextRefreshedEvent) event;
-			if (!WebServerApplicationContext.hasServerNamespace(refreshedEvent.getApplicationContext(), "management")) {
+			// 判断是否存在名为management的服务命名空间，如果不存在则执行重置方法
+			if (!WebServerApplicationContext.hasServerNamespace(
+					refreshedEvent.getApplicationContext(), "management")) {
+				// 重置
 				reset();
 			}
 		}
-		else if (event instanceof RefreshScopeRefreshedEvent || event instanceof InstanceRegisteredEvent) {
+		// 如果事件类型是RefreshScopeRefreshedEvent或者InstanceRegisteredEvent则执行重置方法
+		else if (event instanceof RefreshScopeRefreshedEvent
+				|| event instanceof InstanceRegisteredEvent) {
 			reset();
 		}
+		// 如果事件类型是ParentHeartbeatEvent
 		else if (event instanceof ParentHeartbeatEvent) {
 			ParentHeartbeatEvent e = (ParentHeartbeatEvent) event;
 			resetIfNeeded(e.getValue());
 		}
+		// 如果事件类型是HeartbeatEvent
 		else if (event instanceof HeartbeatEvent) {
 			HeartbeatEvent e = (HeartbeatEvent) event;
 			resetIfNeeded(e.getValue());
@@ -67,6 +75,7 @@ public class RouteRefreshListener implements ApplicationListener<ApplicationEven
 	}
 
 	private void resetIfNeeded(Object value) {
+		// 更新心跳检测数据再重置
 		if (this.monitor.update(value)) {
 			reset();
 		}

@@ -42,6 +42,9 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.util.Assert;
 import org.springframework.validation.Validator;
 
+/**
+ * 配置服务
+ */
 public class ConfigurationService implements ApplicationEventPublisherAware {
 
 	/**

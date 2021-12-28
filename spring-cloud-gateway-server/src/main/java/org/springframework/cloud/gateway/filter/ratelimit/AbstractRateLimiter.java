@@ -48,19 +48,28 @@ public abstract class AbstractRateLimiter<C> extends AbstractStatefulConfigurabl
 
 	@Override
 	public void onApplicationEvent(FilterArgsEvent event) {
+		// 从事件对象中获取参数集合
 		Map<String, Object> args = event.getArgs();
 
+		// 如果参数集合为空或者没有configurationPropertyName+.的键则跳过处理
 		if (args.isEmpty() || !hasRelevantKey(args)) {
 			return;
 		}
 
+		// 获取路由id
 		String routeId = event.getRouteId();
 
+		// 创建路由配置
 		C routeConfig = newConfig();
+		// 配置服务不为空
 		if (this.configurationService != null) {
-			this.configurationService.with(routeConfig).name(this.configurationPropertyName).normalizedProperties(args)
+			// 根据路由配置在配置服务中搜索对应实例
+			// 为对应实例设置名称、属性
+			this.configurationService.with(routeConfig).name(this.configurationPropertyName)
+					.normalizedProperties(args)
 					.bind();
 		}
+		// 获取配置设置路由id和路由配置信息
 		getConfig().put(routeId, routeConfig);
 	}
 

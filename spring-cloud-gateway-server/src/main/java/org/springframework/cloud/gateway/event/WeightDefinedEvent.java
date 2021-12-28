@@ -16,11 +16,13 @@
 
 package org.springframework.cloud.gateway.event;
 
+import org.springframework.cloud.gateway.filter.WeightCalculatorWebFilter;
 import org.springframework.cloud.gateway.support.WeightConfig;
 import org.springframework.context.ApplicationEvent;
 
 /**
  * 权重定义事件
+ * @see WeightCalculatorWebFilter#onApplicationEvent(org.springframework.context.ApplicationEvent)
  */
 public class WeightDefinedEvent extends ApplicationEvent {
 
