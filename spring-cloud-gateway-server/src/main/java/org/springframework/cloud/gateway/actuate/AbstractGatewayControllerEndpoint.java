@@ -51,19 +51,41 @@ public class AbstractGatewayControllerEndpoint implements ApplicationEventPublis
 
 	private static final Log log = LogFactory.getLog(GatewayControllerEndpoint.class);
 
+	/**
+	 * 路由定义加载器
+	 */
 	protected RouteDefinitionLocator routeDefinitionLocator;
 
+	/**
+	 * 全局过滤器
+	 */
 	protected List<GlobalFilter> globalFilters;
 
 	// TODO change casing in next major release
+
+	/**
+	 * 网关过滤器工厂
+	 */
 	protected List<GatewayFilterFactory> GatewayFilters;
 
+	/**
+	 * 路由谓词工厂
+	 */
 	protected List<RoutePredicateFactory> routePredicates;
 
+	/**
+	 * 路由定义编辑器
+	 */
 	protected RouteDefinitionWriter routeDefinitionWriter;
 
+	/**
+	 * 路由定位器
+	 */
 	protected RouteLocator routeLocator;
 
+	/**
+	 * 事件推送器
+	 */
 	protected ApplicationEventPublisher publisher;
 
 	public AbstractGatewayControllerEndpoint(RouteDefinitionLocator routeDefinitionLocator,

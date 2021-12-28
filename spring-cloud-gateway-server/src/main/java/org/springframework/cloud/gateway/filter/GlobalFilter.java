@@ -25,6 +25,7 @@ import org.springframework.web.server.ServerWebExchange;
  * implement cross-cutting, application-agnostic requirements such as security, timeouts,
  * and others.
  *
+ * 全局过滤器
  * @author Rossen Stoyanchev
  * @since 5.0
  */

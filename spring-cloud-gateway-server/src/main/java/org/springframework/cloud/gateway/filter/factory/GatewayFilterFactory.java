@@ -25,6 +25,7 @@ import org.springframework.cloud.gateway.support.NameUtils;
 import org.springframework.cloud.gateway.support.ShortcutConfigurable;
 
 /**
+ * 网关过滤器工厂
  * @author Spencer Gibb
  */
 @FunctionalInterface
