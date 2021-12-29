@@ -107,22 +107,38 @@ public class AbstractGatewayControllerEndpoint implements ApplicationEventPublis
 
 	// TODO: Add uncommited or new but not active routes endpoint
 
+	/**
+	 * 推送路由刷新事件，进行路由刷新操作
+	 * @return
+	 */
 	@PostMapping("/refresh")
 	public Mono<Void> refresh() {
 		this.publisher.publishEvent(new RefreshRoutesEvent(this));
 		return Mono.empty();
 	}
 
+	/**
+	 * 用于获取全局过滤器
+	 * @return
+	 */
 	@GetMapping("/globalfilters")
 	public Mono<HashMap<String, Object>> globalfilters() {
 		return getNamesToOrders(this.globalFilters);
 	}
 
+	/**
+	 * 获取网关过滤器工厂映射
+	 * @return
+	 */
 	@GetMapping("/routefilters")
 	public Mono<HashMap<String, Object>> routefilers() {
 		return getNamesToOrders(this.GatewayFilters);
 	}
 
+	/**
+	 * 获取路由谓词工厂映射
+	 * @return
+	 */
 	@GetMapping("/routepredicates")
 	public Mono<HashMap<String, Object>> routepredicates() {
 		return getNamesToOrders(this.routePredicates);
@@ -147,6 +163,13 @@ public class AbstractGatewayControllerEndpoint implements ApplicationEventPublis
 	 * predicates:='["Host=**.apiaddrequestheader.org", "Path=/headers"]'
 	 * filters:='["AddRequestHeader=X-Request-ApiFoo, ApiBar"]'
 	 */
+
+	/**
+	 * 保存路由信息
+	 * @param id
+	 * @param route
+	 * @return
+	 */
 	@PostMapping("/routes/{id}")
 	@SuppressWarnings("unchecked")
 	public Mono<ResponseEntity<Object>> save(@PathVariable String id, @RequestBody RouteDefinition route) {
@@ -161,18 +184,25 @@ public class AbstractGatewayControllerEndpoint implements ApplicationEventPublis
 	}
 
 	private boolean validateRouteDefinition(RouteDefinition routeDefinition) {
+		// 过滤器是否有效
 		boolean hasValidFilterDefinitions = routeDefinition.getFilters().stream()
 				.allMatch(filterDefinition -> GatewayFilters.stream().anyMatch(
-						gatewayFilterFactory -> filterDefinition.getName().equals(gatewayFilterFactory.name())));
+						gatewayFilterFactory -> filterDefinition.getName()
+								.equals(gatewayFilterFactory.name())));
 
+		// 谓词是否有效
 		boolean hasValidPredicateDefinitions = routeDefinition.getPredicates().stream()
 				.allMatch(predicateDefinition -> routePredicates.stream()
-						.anyMatch(routePredicate -> predicateDefinition.getName().equals(routePredicate.name())));
+						.anyMatch(routePredicate -> predicateDefinition.getName()
+								.equals(routePredicate.name())));
 		log.debug("FilterDefinitions valid: " + hasValidFilterDefinitions);
 		log.debug("PredicateDefinitions valid: " + hasValidPredicateDefinitions);
 		return hasValidFilterDefinitions && hasValidPredicateDefinitions;
 	}
 
+	/**
+	 * 根据路由id删除路由信息
+	 */
 	@DeleteMapping("/routes/{id}")
 	public Mono<ResponseEntity<Object>> delete(@PathVariable String id) {
 		return this.routeDefinitionWriter.delete(Mono.just(id))
@@ -180,6 +210,9 @@ public class AbstractGatewayControllerEndpoint implements ApplicationEventPublis
 				.onErrorResume(t -> t instanceof NotFoundException, t -> Mono.just(ResponseEntity.notFound().build()));
 	}
 
+	/**
+	 * 根据路由id获取路由信息
+	 */
 	@GetMapping("/routes/{id}/combinedfilters")
 	public Mono<HashMap<String, Object>> combinedfilters(@PathVariable String id) {
 		// TODO: missing global filters

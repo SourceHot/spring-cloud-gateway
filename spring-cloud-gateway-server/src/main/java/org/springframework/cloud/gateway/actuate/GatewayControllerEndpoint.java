@@ -52,12 +52,21 @@ public class GatewayControllerEndpoint extends AbstractGatewayControllerEndpoint
 				routeLocator);
 	}
 
+	/**
+	 * 获取路由定义集合
+	 * @return
+	 */
 	@GetMapping("/routedefinitions")
 	public Flux<RouteDefinition> routesdef() {
 		return this.routeDefinitionLocator.getRouteDefinitions();
 	}
 
 	// TODO: Flush out routes without a definition
+
+	/**
+	 * 获取路由对象并将其序列化后返回
+	 * @return
+	 */
 	@GetMapping("/routes")
 	public Flux<Map<String, Object>> routes() {
 		return this.routeLocator.getRoutes().map(this::serialize);
@@ -84,6 +93,11 @@ public class GatewayControllerEndpoint extends AbstractGatewayControllerEndpoint
 		return r;
 	}
 
+	/**
+	 * 根据路由id获取路由信息
+	 * @param id
+	 * @return
+	 */
 	@GetMapping("/routes/{id}")
 	public Mono<ResponseEntity<Map<String, Object>>> route(@PathVariable String id) {
 		// @formatter:off
