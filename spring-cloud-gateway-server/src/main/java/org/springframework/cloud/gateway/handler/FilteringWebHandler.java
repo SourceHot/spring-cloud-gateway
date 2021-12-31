@@ -111,11 +111,17 @@ public class FilteringWebHandler implements WebHandler {
 		@Override
 		public Mono<Void> filter(ServerWebExchange exchange) {
 			return Mono.defer(() -> {
+				// 当前处理的索引小于网关过滤器总量
 				if (this.index < filters.size()) {
+					// 根据索引获取
 					GatewayFilter filter = filters.get(this.index);
-					DefaultGatewayFilterChain chain = new DefaultGatewayFilterChain(this, this.index + 1);
+					// 创建默认过滤器
+					DefaultGatewayFilterChain chain = new DefaultGatewayFilterChain(this,
+							this.index + 1);
+					// 执行过滤器
 					return filter.filter(exchange, chain);
 				}
+				// 返回空
 				else {
 					return Mono.empty(); // complete
 				}

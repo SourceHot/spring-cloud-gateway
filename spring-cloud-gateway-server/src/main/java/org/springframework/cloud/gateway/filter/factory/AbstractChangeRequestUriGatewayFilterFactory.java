@@ -31,6 +31,8 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.G
  * This filter changes the request uri by
  * {@link #determineRequestUri(ServerWebExchange, T)} logic.
  *
+ *
+ * 通过特定逻辑替换URI地址
  * @author Toshiaki Maki
  */
 public abstract class AbstractChangeRequestUriGatewayFilterFactory<T> extends AbstractGatewayFilterFactory<T> {

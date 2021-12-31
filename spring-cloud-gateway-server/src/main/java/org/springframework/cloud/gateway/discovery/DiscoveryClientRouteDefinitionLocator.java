@@ -118,7 +118,7 @@ public class DiscoveryClientRouteDefinitionLocator implements RouteDefinitionLoc
 					final ServiceInstance instanceForEval = new DelegatingServiceInstance(instance,
 							properties);
 
-					// 获取谓词定义集合
+					// 获取配置表中的谓词定义集合
 					for (PredicateDefinition original : this.properties.getPredicates()) {
 						// 创建谓词定义
 						PredicateDefinition predicate = new PredicateDefinition();
@@ -134,7 +134,7 @@ public class DiscoveryClientRouteDefinitionLocator implements RouteDefinitionLoc
 						routeDefinition.getPredicates().add(predicate);
 					}
 
-					// 获取过滤器定义集合
+					// 获取配置表中的过滤器定义集合
 					for (FilterDefinition original : this.properties.getFilters()) {
 						// 创建过滤器定义
 						FilterDefinition filter = new FilterDefinition();

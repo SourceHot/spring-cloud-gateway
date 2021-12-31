@@ -35,6 +35,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.a
  * This filter removes the first part of the path, known as the prefix, from the request
  * before sending it downstream.
  *
+ * 前缀剥离器
  * @author Ryan Baxter
  */
 public class StripPrefixGatewayFilterFactory
@@ -59,14 +60,21 @@ public class StripPrefixGatewayFilterFactory
 		return new GatewayFilter() {
 			@Override
 			public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+				// 获取原始请求对象
 				ServerHttpRequest request = exchange.getRequest();
+				// 添加原始路由地址
 				addOriginalRequestUrl(exchange, request.getURI());
+				// 获取请求地址
 				String path = request.getURI().getRawPath();
+				// 根据/进行字符串拆分
 				String[] originalParts = StringUtils.tokenizeToStringArray(path, "/");
 
 				// all new paths start with /
+				// 创建"/"字符串对象,保证新的路由地址是以/开头
 				StringBuilder newPath = new StringBuilder("/");
+				// 循环字符串拆分结果将数据加入到newPath变量中
 				for (int i = 0; i < originalParts.length; i++) {
+					// 超过配置文件中的parts数据则会加入到newPath
 					if (i >= config.getParts()) {
 						// only append slash if this is the second part or greater
 						if (newPath.length() > 1) {
@@ -79,8 +87,10 @@ public class StripPrefixGatewayFilterFactory
 					newPath.append('/');
 				}
 
+				// 构造新的请求对象
 				ServerHttpRequest newRequest = request.mutate().path(newPath.toString()).build();
 
+				// 设置GATEWAY_REQUEST_URL_ATTR属性,属性值为新的路由地址
 				exchange.getAttributes().put(GATEWAY_REQUEST_URL_ATTR, newRequest.getURI());
 
 				return chain.filter(exchange.mutate().request(newRequest).build());

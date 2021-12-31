@@ -31,17 +31,31 @@ import org.springframework.web.server.ServerWebExchange;
 
 /**
  * Sample throttling filter. See https://github.com/bbeck/token-bucket
+ *
+ * 限流过滤器
  */
 public class ThrottleGatewayFilter implements GatewayFilter {
 
 	private static final Log log = LogFactory.getLog(ThrottleGatewayFilter.class);
 
+	/**
+	 * 容量
+	 */
 	int capacity;
 
+	/**
+	 * 填充数量
+	 */
 	int refillTokens;
 
+	/**
+	 * 间隔时间
+	 */
 	int refillPeriod;
 
+	/**
+	 * 间隔时间的单位
+	 */
 	TimeUnit refillUnit;
 
 	public int getCapacity() {
@@ -83,16 +97,20 @@ public class ThrottleGatewayFilter implements GatewayFilter {
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
+		// 构建TokenBucket
 		TokenBucket tokenBucket = TokenBuckets.builder().withCapacity(capacity)
 				.withFixedIntervalRefillStrategy(refillTokens, refillPeriod, refillUnit).build();
 
 		// TODO: get a token bucket for a key
 		log.debug("TokenBucket capacity: " + tokenBucket.getCapacity());
+		// 尝试是否可以消费，如果可以则进行责任链处理
 		boolean consumed = tokenBucket.tryConsume();
 		if (consumed) {
 			return chain.filter(exchange);
 		}
+		// 设置响应状态码为429，表示请求过多
 		exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
+		// 获取响应对象设置处理完成标记
 		return exchange.getResponse().setComplete();
 	}
 

@@ -30,6 +30,7 @@ import org.springframework.web.server.ServerWebExchange;
 import static org.springframework.cloud.gateway.support.GatewayToStringStyler.filterToStringCreator;
 
 /**
+ * 重写头信息过滤器工厂
  * @author Vitaliy Pavlyuk
  */
 public class RewriteResponseHeaderGatewayFilterFactory
@@ -77,14 +78,20 @@ public class RewriteResponseHeaderGatewayFilterFactory
 	}
 
 	protected void rewriteHeaders(ServerWebExchange exchange, Config config) {
+		// 获取配置名称
 		final String name = config.getName();
+		// 获取原有响应的头信息
 		final HttpHeaders responseHeaders = exchange.getResponse().getHeaders();
+		// 重组响应头信息
 		responseHeaders.computeIfPresent(name, (k, v) -> rewriteHeaders(config, v));
 	}
 
 	protected List<String> rewriteHeaders(Config config, List<String> headers) {
+		// 创建重写的头信息key存储容器
 		ArrayList<String> rewrittenHeaders = new ArrayList<>();
+		// 循环头信息数据
 		for (int i = 0; i < headers.size(); i++) {
+			// 重写数据
 			String rewriten = rewrite(headers.get(i), config.getRegexp(), config.getReplacement());
 			rewrittenHeaders.add(rewriten);
 		}

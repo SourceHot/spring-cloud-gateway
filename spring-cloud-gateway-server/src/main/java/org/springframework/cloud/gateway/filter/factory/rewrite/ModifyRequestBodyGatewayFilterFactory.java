@@ -42,6 +42,8 @@ import static org.springframework.cloud.gateway.support.GatewayToStringStyler.fi
 
 /**
  * GatewayFilter that modifies the request body.
+ *
+ * 修改请求体的过滤器工厂
  */
 public class ModifyRequestBodyGatewayFilterFactory
 		extends AbstractGatewayFilterFactory<ModifyRequestBodyGatewayFilterFactory.Config> {
@@ -64,35 +66,51 @@ public class ModifyRequestBodyGatewayFilterFactory
 		return new GatewayFilter() {
 			@Override
 			public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+				// 获取输入类型
 				Class inClass = config.getInClass();
+				// 创建请求对象
 				ServerRequest serverRequest = ServerRequest.create(exchange, messageReaders);
 
 				// TODO: flux or mono
+				// 修改请求体信息
 				Mono<?> modifiedBody = serverRequest.bodyToMono(inClass)
-						.flatMap(originalBody -> config.getRewriteFunction().apply(exchange, originalBody))
-						.switchIfEmpty(Mono.defer(() -> (Mono) config.getRewriteFunction().apply(exchange, null)));
+						.flatMap(originalBody -> config.getRewriteFunction()
+								.apply(exchange, originalBody))
+						.switchIfEmpty(Mono.defer(
+								() -> (Mono) config.getRewriteFunction().apply(exchange, null)));
 
-				BodyInserter bodyInserter = BodyInserters.fromPublisher(modifiedBody, config.getOutClass());
+				// 创建请求体写入器
+				BodyInserter bodyInserter = BodyInserters.fromPublisher(modifiedBody,
+						config.getOutClass());
+				// 设置头信息
 				HttpHeaders headers = new HttpHeaders();
 				headers.putAll(exchange.getRequest().getHeaders());
 
 				// the new content type will be computed by bodyInserter
 				// and then set in the request decorator
+				// 移除Content-Length头信息
 				headers.remove(HttpHeaders.CONTENT_LENGTH);
 
 				// if the body is changing content types, set it here, to the bodyInserter
 				// will know about it
+				// 如果Content-Type数据不为空则会向头信息中设置Content-Type数据
 				if (config.getContentType() != null) {
 					headers.set(HttpHeaders.CONTENT_TYPE, config.getContentType());
 				}
-				CachedBodyOutputMessage outputMessage = new CachedBodyOutputMessage(exchange, headers);
+				// 构造写出对象
+				CachedBodyOutputMessage outputMessage = new CachedBodyOutputMessage(exchange,
+						headers);
+				// 写出信息
 				return bodyInserter.insert(outputMessage, new BodyInserterContext())
-						// .log("modify_request", Level.INFO)
 						.then(Mono.defer(() -> {
-							ServerHttpRequest decorator = decorate(exchange, headers, outputMessage);
+							// 对请求进行装饰得到新的请求对象
+							ServerHttpRequest decorator = decorate(exchange, headers,
+									outputMessage);
+							// 交给下一个过滤器处理
 							return chain.filter(exchange.mutate().request(decorator).build());
-						})).onErrorResume((Function<Throwable, Mono<Void>>) throwable -> release(exchange,
-								outputMessage, throwable));
+						})).onErrorResume(
+								(Function<Throwable, Mono<Void>>) throwable -> release(exchange,
+										outputMessage, throwable));
 			}
 
 			@Override
@@ -114,16 +132,20 @@ public class ModifyRequestBodyGatewayFilterFactory
 
 	ServerHttpRequestDecorator decorate(ServerWebExchange exchange, HttpHeaders headers,
 			CachedBodyOutputMessage outputMessage) {
+		// 创建包装对象
 		return new ServerHttpRequestDecorator(exchange.getRequest()) {
 			@Override
 			public HttpHeaders getHeaders() {
+				// 获取内容长度
 				long contentLength = headers.getContentLength();
+				// 创建头信息
 				HttpHeaders httpHeaders = new HttpHeaders();
+				// 设置参数传递的头信息
 				httpHeaders.putAll(headers);
+				// 如果内容长度大于0则设置长度，反之设置头信息Transfer-Encoding的数据为chunked
 				if (contentLength > 0) {
 					httpHeaders.setContentLength(contentLength);
-				}
-				else {
+				} else {
 					// TODO: this causes a 'HTTP/1.1 411 Length Required' // on
 					// httpbin.org
 					httpHeaders.set(HttpHeaders.TRANSFER_ENCODING, "chunked");
@@ -131,6 +153,7 @@ public class ModifyRequestBodyGatewayFilterFactory
 				return httpHeaders;
 			}
 
+			// 从写出消息对象中获取请求体
 			@Override
 			public Flux<DataBuffer> getBody() {
 				return outputMessage.getBody();

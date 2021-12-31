@@ -16,16 +16,15 @@
 
 package org.springframework.cloud.gateway.filter.factory.rewrite;
 
+import static java.util.function.Function.identity;
+import static org.springframework.cloud.gateway.support.GatewayToStringStyler.filterToStringCreator;
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.ORIGINAL_RESPONSE_CONTENT_TYPE_ATTR;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.NettyWriteResponseFilter;
@@ -44,10 +43,9 @@ import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.server.ServerWebExchange;
-
-import static java.util.function.Function.identity;
-import static org.springframework.cloud.gateway.support.GatewayToStringStyler.filterToStringCreator;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.ORIGINAL_RESPONSE_CONTENT_TYPE_ATTR;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * GatewayFilter that modifies the response body.
@@ -168,7 +166,10 @@ public class ModifyResponseBodyGatewayFilterFactory
 
 		@Override
 		public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-			return chain.filter(exchange.mutate().response(new ModifiedServerHttpResponse(exchange, config)).build());
+			// 修改响应对象为ModifiedServerHttpResponse
+			return chain.filter(
+					exchange.mutate().response(new ModifiedServerHttpResponse(exchange, config))
+							.build());
 		}
 
 		@Override
@@ -205,37 +206,56 @@ public class ModifyResponseBodyGatewayFilterFactory
 		@Override
 		public Mono<Void> writeWith(Publisher<? extends DataBuffer> body) {
 
+			// 获取输入类型
 			Class inClass = config.getInClass();
+			// 获取输出类型
 			Class outClass = config.getOutClass();
-
-			String originalResponseContentType = exchange.getAttribute(ORIGINAL_RESPONSE_CONTENT_TYPE_ATTR);
+			// 获取响应类型
+			String originalResponseContentType = exchange.getAttribute(
+					ORIGINAL_RESPONSE_CONTENT_TYPE_ATTR);
+			// 创建HTTP头信息对象
 			HttpHeaders httpHeaders = new HttpHeaders();
 			// explicitly add it in this way instead of
 			// 'httpHeaders.setContentType(originalResponseContentType)'
 			// this will prevent exception in case of using non-standard media
 			// types like "Content-Type: image"
+			// 设置响应类型
 			httpHeaders.add(HttpHeaders.CONTENT_TYPE, originalResponseContentType);
 
+			// 创建响应对象
 			ClientResponse clientResponse = prepareClientResponse(body, httpHeaders);
 
 			// TODO: flux or mono
+			// 提取响应体
 			Mono modifiedBody = extractBody(exchange, clientResponse, inClass)
-					.flatMap(originalBody -> config.getRewriteFunction().apply(exchange, originalBody))
-					.switchIfEmpty(Mono.defer(() -> (Mono) config.getRewriteFunction().apply(exchange, null)));
+					.flatMap(originalBody -> config.getRewriteFunction()
+							.apply(exchange, originalBody))
+					.switchIfEmpty(Mono.defer(
+							() -> (Mono) config.getRewriteFunction().apply(exchange, null)));
 
+			// 构建响应体插入器
 			BodyInserter bodyInserter = BodyInserters.fromPublisher(modifiedBody, outClass);
+			// 构造写出的信息对象
 			CachedBodyOutputMessage outputMessage = new CachedBodyOutputMessage(exchange,
 					exchange.getResponse().getHeaders());
-			return bodyInserter.insert(outputMessage, new BodyInserterContext()).then(Mono.defer(() -> {
-				Mono<DataBuffer> messageBody = writeBody(getDelegate(), outputMessage, outClass);
-				HttpHeaders headers = getDelegate().getHeaders();
-				if (!headers.containsKey(HttpHeaders.TRANSFER_ENCODING)
-						|| headers.containsKey(HttpHeaders.CONTENT_LENGTH)) {
-					messageBody = messageBody.doOnNext(data -> headers.setContentLength(data.readableByteCount()));
-				}
-				// TODO: fail if isStreamingMediaType?
-				return getDelegate().writeWith(messageBody);
-			}));
+			// 通过响应体插入器插入响应体数据进行写出操作
+			return bodyInserter.insert(outputMessage, new BodyInserterContext())
+					.then(Mono.defer(() -> {
+						// 构造写出对象
+						Mono<DataBuffer> messageBody = writeBody(getDelegate(), outputMessage,
+								outClass);
+						// 获取HTTP头信息
+						HttpHeaders headers = getDelegate().getHeaders();
+						// 头信息中不存在Transfer-Encoding信息或者Content-Length信息会对写出对象设置内容长度数据
+						if (!headers.containsKey(HttpHeaders.TRANSFER_ENCODING)
+								|| headers.containsKey(HttpHeaders.CONTENT_LENGTH)) {
+							messageBody = messageBody.doOnNext(
+									data -> headers.setContentLength(data.readableByteCount()));
+						}
+						// TODO: fail if isStreamingMediaType?
+						// 写出消息
+						return getDelegate().writeWith(messageBody);
+					}));
 		}
 
 		@Override
@@ -243,24 +263,34 @@ public class ModifyResponseBodyGatewayFilterFactory
 			return writeWith(Flux.from(body).flatMapSequential(p -> p));
 		}
 
+		// 创建响应对象
 		private ClientResponse prepareClientResponse(Publisher<? extends DataBuffer> body, HttpHeaders httpHeaders) {
 			ClientResponse.Builder builder;
 			builder = ClientResponse.create(exchange.getResponse().getStatusCode(), messageReaders);
 			return builder.headers(headers -> headers.putAll(httpHeaders)).body(Flux.from(body)).build();
 		}
 
+		// 提取响应体
 		private <T> Mono<T> extractBody(ServerWebExchange exchange, ClientResponse clientResponse, Class<T> inClass) {
 			// if inClass is byte[] then just return body, otherwise check if
 			// decoding required
+			// 输入类型是byte类型
 			if (byte[].class.isAssignableFrom(inClass)) {
+				// 直接转换出结果
 				return clientResponse.bodyToMono(inClass);
 			}
 
-			List<String> encodingHeaders = exchange.getResponse().getHeaders().getOrEmpty(HttpHeaders.CONTENT_ENCODING);
+			// 获取响应信息中的编码集合
+			List<String> encodingHeaders = exchange.getResponse().getHeaders()
+					.getOrEmpty(HttpHeaders.CONTENT_ENCODING);
+			// 循环编码集合
 			for (String encoding : encodingHeaders) {
+				// 根据编码获取解码器
 				MessageBodyDecoder decoder = messageBodyDecoders.get(encoding);
+				// 解码器不为空
 				if (decoder != null) {
-					return clientResponse.bodyToMono(byte[].class).publishOn(Schedulers.parallel()).map(decoder::decode)
+					return clientResponse.bodyToMono(byte[].class).publishOn(Schedulers.parallel())
+							.map(decoder::decode)
 							.map(bytes -> exchange.getResponse().bufferFactory().wrap(bytes))
 							.map(buffer -> prepareClientResponse(Mono.just(buffer),
 									exchange.getResponse().getHeaders()))
@@ -268,21 +298,32 @@ public class ModifyResponseBodyGatewayFilterFactory
 				}
 			}
 
+			// 直接转换出结果
 			return clientResponse.bodyToMono(inClass);
 		}
 
+		// 写出响应体
 		private Mono<DataBuffer> writeBody(ServerHttpResponse httpResponse, CachedBodyOutputMessage message,
 				Class<?> outClass) {
+			// 获取响应信息
 			Mono<DataBuffer> response = DataBufferUtils.join(message.getBody());
+			// 如果输出类型是byte类型直接写出
 			if (byte[].class.isAssignableFrom(outClass)) {
 				return response;
 			}
 
-			List<String> encodingHeaders = httpResponse.getHeaders().getOrEmpty(HttpHeaders.CONTENT_ENCODING);
+			// 获取响应信息中的编码集合。
+			List<String> encodingHeaders = httpResponse.getHeaders()
+					.getOrEmpty(HttpHeaders.CONTENT_ENCODING);
+			// 循环编码
 			for (String encoding : encodingHeaders) {
+				// 获取编码器
 				MessageBodyEncoder encoder = messageBodyEncoders.get(encoding);
+				// 编码器不为空
 				if (encoder != null) {
+					// 获取DataBuffer工厂对象
 					DataBufferFactory dataBufferFactory = httpResponse.bufferFactory();
+					// 组装写出对象
 					response = response.publishOn(Schedulers.parallel()).map(buffer -> {
 						byte[] encodedResponse = encoder.encode(buffer);
 						DataBufferUtils.release(buffer);
@@ -292,6 +333,7 @@ public class ModifyResponseBodyGatewayFilterFactory
 				}
 			}
 
+			// 写出对象
 			return response;
 		}
 

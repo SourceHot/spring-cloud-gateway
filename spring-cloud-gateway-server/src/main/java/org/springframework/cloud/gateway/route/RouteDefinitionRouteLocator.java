@@ -203,27 +203,37 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 		List<GatewayFilter> filters = new ArrayList<>();
 
 		// TODO: support option to apply defaults after route specific filters?
+		// 获取默认过滤器如果不为空
 		if (!this.gatewayProperties.getDefaultFilters().isEmpty()) {
+			// 通过loadGatewayFilters方法在所有网关过滤器中进行筛选，将筛选结果放入到返回结果
 			filters.addAll(loadGatewayFilters(routeDefinition.getId(),
 					new ArrayList<>(this.gatewayProperties.getDefaultFilters())));
 		}
 
+		// 路由定义过滤器不为空
 		if (!routeDefinition.getFilters().isEmpty()) {
-			filters.addAll(loadGatewayFilters(routeDefinition.getId(), new ArrayList<>(routeDefinition.getFilters())));
+			// 通过loadGatewayFilters方法在所有网关过滤器中进行筛选，将筛选结果放入到返回结果
+			filters.addAll(loadGatewayFilters(routeDefinition.getId(),
+					new ArrayList<>(routeDefinition.getFilters())));
 		}
 
+		// 排序网关过滤器
 		AnnotationAwareOrderComparator.sort(filters);
 		return filters;
 	}
 
 	private AsyncPredicate<ServerWebExchange> combinePredicates(RouteDefinition routeDefinition) {
+		// 从路由定义对象中获取谓词集合
 		List<PredicateDefinition> predicates = routeDefinition.getPredicates();
+		// 谓词集合不存在或为空则返回AsyncPredicate处理结果为恒真的对象
 		if (predicates == null || predicates.isEmpty()) {
 			// this is a very rare case, but possible, just match all
 			return AsyncPredicate.from(exchange -> true);
 		}
+		// 将第一个谓词定义构造为AsyncPredicate对象
 		AsyncPredicate<ServerWebExchange> predicate = lookup(routeDefinition, predicates.get(0));
 
+		// 将第一个谓词元素以外的数据全部以and形式加入到第一个谓词对象映射的AsyncPredicate对象之后
 		for (PredicateDefinition andPredicate : predicates.subList(1, predicates.size())) {
 			AsyncPredicate<ServerWebExchange> found = lookup(routeDefinition, andPredicate);
 			predicate = predicate.and(found);

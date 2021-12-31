@@ -32,6 +32,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.G
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.addOriginalRequestUrl;
 
 /**
+ * 重新路由地址的过滤器工厂
  * @author Spencer Gibb
  */
 public class RewritePathGatewayFilterFactory
@@ -58,17 +59,24 @@ public class RewritePathGatewayFilterFactory
 
 	@Override
 	public GatewayFilter apply(Config config) {
+		// 获取配置对象中的replacement数据，替换"$\\"为"$"
 		String replacement = config.replacement.replace("$\\", "$");
 		return new GatewayFilter() {
 			@Override
 			public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+				// 获取请求对象
 				ServerHttpRequest req = exchange.getRequest();
+				// 添加原始路由地址
 				addOriginalRequestUrl(exchange, req.getURI());
+				// 获取请求地址
 				String path = req.getURI().getRawPath();
+				// 解算新的请求地址
 				String newPath = path.replaceAll(config.regexp, replacement);
 
+				// 在原始请求对象上进行修改，得到新的请求对象
 				ServerHttpRequest request = req.mutate().path(newPath).build();
 
+				// 设置GATEWAY_REQUEST_URL_ATTR属性为新的路由地址
 				exchange.getAttributes().put(GATEWAY_REQUEST_URL_ATTR, request.getURI());
 
 				return chain.filter(exchange.mutate().request(request).build());
