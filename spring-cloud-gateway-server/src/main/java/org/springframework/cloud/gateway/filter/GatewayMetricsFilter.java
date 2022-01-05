@@ -40,10 +40,19 @@ public class GatewayMetricsFilter implements GlobalFilter, Ordered {
 
 	private static final Log log = LogFactory.getLog(GatewayMetricsFilter.class);
 
+	/**
+	 * 指标注册器
+	 */
 	private final MeterRegistry meterRegistry;
 
+	/**
+	 * 网关标签提供器
+	 */
 	private GatewayTagsProvider compositeTagsProvider;
 
+	/**
+	 * 指标前缀
+	 */
 	private final String metricsPrefix;
 
 	public GatewayMetricsFilter(MeterRegistry meterRegistry, List<GatewayTagsProvider> tagsProviders,
@@ -71,19 +80,23 @@ public class GatewayMetricsFilter implements GlobalFilter, Ordered {
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+		// 生成开始时间
 		Sample sample = Timer.start(meterRegistry);
 
-		return chain.filter(exchange).doOnSuccess(aVoid -> endTimerRespectingCommit(exchange, sample))
+		return chain.filter(exchange)
+				.doOnSuccess(aVoid -> endTimerRespectingCommit(exchange, sample))
 				.doOnError(throwable -> endTimerRespectingCommit(exchange, sample));
 	}
 
 	private void endTimerRespectingCommit(ServerWebExchange exchange, Sample sample) {
 
+		// 获取响应对象
 		ServerHttpResponse response = exchange.getResponse();
+		// 判断响应是否提交结束
 		if (response.isCommitted()) {
 			endTimerInner(exchange, sample);
-		}
-		else {
+		} else {
+			// 提交之前推送时间对象
 			response.beforeCommit(() -> {
 				endTimerInner(exchange, sample);
 				return Mono.empty();
@@ -92,11 +105,13 @@ public class GatewayMetricsFilter implements GlobalFilter, Ordered {
 	}
 
 	private void endTimerInner(ServerWebExchange exchange, Sample sample) {
+		// 计算标签集合
 		Tags tags = compositeTagsProvider.apply(exchange);
 
 		if (log.isTraceEnabled()) {
 			log.trace(metricsPrefix + ".requests tags: " + tags);
 		}
+		// 停止时间计算器计算时间差将指标进行注册
 		sample.stop(meterRegistry.timer(metricsPrefix + ".requests", tags));
 	}
 

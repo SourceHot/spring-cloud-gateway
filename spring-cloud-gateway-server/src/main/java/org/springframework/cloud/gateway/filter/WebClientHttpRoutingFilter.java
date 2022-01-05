@@ -42,10 +42,14 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.i
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.setAlreadyRouted;
 
 /**
+ * Web客户端路由过滤器
  * @author Spencer Gibb
  */
 public class WebClientHttpRoutingFilter implements GlobalFilter, Ordered {
 
+	/**
+	 * Web客户端
+	 */
 	private final WebClient webClient;
 
 	private final ObjectProvider<List<HttpHeadersFilter>> headersFiltersProvider;
@@ -73,38 +77,50 @@ public class WebClientHttpRoutingFilter implements GlobalFilter, Ordered {
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+		// 获取gatewayRequestUrl属性对应的URI
 		URI requestUrl = exchange.getRequiredAttribute(GATEWAY_REQUEST_URL_ATTR);
 
+		// 获取方案
 		String scheme = requestUrl.getScheme();
+		// 判断是否需要额外处理
+		// 1. gatewayAlreadyRouted属性为true
+		// 2. 不是http和不是https请求
 		if (isAlreadyRouted(exchange) || (!"http".equals(scheme) && !"https".equals(scheme))) {
 			return chain.filter(exchange);
 		}
+		// 设置gatewayAlreadyRouted属性为true
 		setAlreadyRouted(exchange);
 
+		// 获取请求对象
 		ServerHttpRequest request = exchange.getRequest();
 
+		// 获取请求方式
 		HttpMethod method = request.getMethod();
-
+		// 获取请求头
 		HttpHeaders filteredHeaders = filterRequest(getHeadersFilters(), exchange);
+		// 获取preserveHostHeader属性
+		boolean preserveHost = exchange.getAttributeOrDefault(PRESERVE_HOST_HEADER_ATTRIBUTE,
+				false);
 
-		boolean preserveHost = exchange.getAttributeOrDefault(PRESERVE_HOST_HEADER_ATTRIBUTE, false);
+		// 创建请求体对象
+		RequestBodySpec bodySpec = this.webClient.method(method).uri(requestUrl)
+				.headers(httpHeaders -> {
+					httpHeaders.addAll(filteredHeaders);
+					// TODO: can this support preserviceHostHeader?
+					if (!preserveHost) {
+						httpHeaders.remove(HttpHeaders.HOST);
+					}
+				});
 
-		RequestBodySpec bodySpec = this.webClient.method(method).uri(requestUrl).headers(httpHeaders -> {
-			httpHeaders.addAll(filteredHeaders);
-			// TODO: can this support preserviceHostHeader?
-			if (!preserveHost) {
-				httpHeaders.remove(HttpHeaders.HOST);
-			}
-		});
-
+		// 创建头对象
 		RequestHeadersSpec<?> headersSpec;
 		if (requiresBody(method)) {
 			headersSpec = bodySpec.body(BodyInserters.fromDataBuffers(request.getBody()));
-		}
-		else {
+		} else {
 			headersSpec = bodySpec;
 		}
 
+		// 处理请求
 		return headersSpec.exchangeToMono(Mono::just)
 				// .log("webClient route")
 				.flatMap(res -> {

@@ -66,6 +66,8 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.i
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.setAlreadyRouted;
 
 /**
+ * Netty相关的路由过滤器
+ *
  * @author Spencer Gibb
  * @author Biju Kunjummen
  */
@@ -109,90 +111,129 @@ public class NettyRoutingFilter implements GlobalFilter, Ordered {
 	@Override
 	@SuppressWarnings("Duplicates")
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+		// 获取请求URI对象
 		URI requestUrl = exchange.getRequiredAttribute(GATEWAY_REQUEST_URL_ATTR);
 
+		// 获取请求URI的方案数据
 		String scheme = requestUrl.getScheme();
-		if (isAlreadyRouted(exchange) || (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme))) {
+		// 1. 对象exchange中的gatewayAlreadyRouted属性为true。
+		// 2. 方案是不是http也不是https
+		if (isAlreadyRouted(exchange) || (!"http".equalsIgnoreCase(scheme)
+				&& !"https".equalsIgnoreCase(scheme))) {
 			return chain.filter(exchange);
 		}
+		// 设置GATEWAY_ALREADY_ROUTED_ATTR属性为true
 		setAlreadyRouted(exchange);
 
+		// 从exchange中获取服务请求对象
 		ServerHttpRequest request = exchange.getRequest();
-
+		// 获取http方法
 		final HttpMethod method = HttpMethod.valueOf(request.getMethodValue());
+		// 获取路由地址
 		final String url = requestUrl.toASCIIString();
-
+		// 根据成员变量headersFilters过滤头信息
 		HttpHeaders filtered = filterRequest(getHeadersFilters(), exchange);
-
+		// 创建默认的头信息将过滤结果加入其中
 		final DefaultHttpHeaders httpHeaders = new DefaultHttpHeaders();
 		filtered.forEach(httpHeaders::set);
 
-		boolean preserveHost = exchange.getAttributeOrDefault(PRESERVE_HOST_HEADER_ATTRIBUTE, false);
+		// 获取PRESERVE_HOST_HEADER_ATTRIBUTE属性
+		boolean preserveHost = exchange.getAttributeOrDefault(PRESERVE_HOST_HEADER_ATTRIBUTE,
+				false);
+		// 获取路由对象
 		Route route = exchange.getAttribute(GATEWAY_ROUTE_ATTR);
 
+		// 构造http客户端发送请求并且处理请求
 		Flux<HttpClientResponse> responseFlux = getHttpClient(route, exchange).headers(headers -> {
-			headers.add(httpHeaders);
-			// Will either be set below, or later by Netty
-			headers.remove(HttpHeaders.HOST);
-			if (preserveHost) {
-				String host = request.getHeaders().getFirst(HttpHeaders.HOST);
-				headers.add(HttpHeaders.HOST, host);
-			}
-		}).request(method).uri(url).send((req, nettyOutbound) -> {
-			if (log.isTraceEnabled()) {
-				nettyOutbound.withConnection(connection -> log.trace("outbound route: "
-						+ connection.channel().id().asShortText() + ", inbound: " + exchange.getLogPrefix()));
-			}
-			return nettyOutbound.send(request.getBody().map(this::getByteBuf));
-		}).responseConnection((res, connection) -> {
+					// 将默认的头信息对象数据加入到客户端中
+					headers.add(httpHeaders);
+					// Will either be set below, or later by Netty
+					// 移除HOST属性
+					headers.remove(HttpHeaders.HOST);
+					// 如果PRESERVE_HOST_HEADER_ATTRIBUTE属性为真
+					if (preserveHost) {
+						// 从请求对象中获取第一个host地址加入到头信息中
+						String host = request.getHeaders().getFirst(HttpHeaders.HOST);
+						headers.add(HttpHeaders.HOST, host);
+					}
+				})
+				// 构造请求发送请求
+				.request(method).uri(url).send((req, nettyOutbound) -> {
+					if (log.isTraceEnabled()) {
+						nettyOutbound.withConnection(connection -> log.trace("outbound route: "
+								+ connection.channel().id().asShortText() + ", inbound: "
+								+ exchange.getLogPrefix()));
+					}
+					return nettyOutbound.send(request.getBody().map(this::getByteBuf));
+				})
+				// 处理响应结果
+				.responseConnection((res, connection) -> {
 
-			// Defer committing the response until all route filters have run
-			// Put client response as ServerWebExchange attribute and write
-			// response later NettyWriteResponseFilter
-			exchange.getAttributes().put(CLIENT_RESPONSE_ATTR, res);
-			exchange.getAttributes().put(CLIENT_RESPONSE_CONN_ATTR, connection);
+					// Defer committing the response until all route filters have run
+					// Put client response as ServerWebExchange attribute and write
+					// response later NettyWriteResponseFilter
+					// 向exchange中加入CLIENT_RESPONSE_ATTR属性和CLIENT_RESPONSE_CONN_ATTR属性
+					exchange.getAttributes().put(CLIENT_RESPONSE_ATTR, res);
+					exchange.getAttributes().put(CLIENT_RESPONSE_CONN_ATTR, connection);
 
-			ServerHttpResponse response = exchange.getResponse();
-			// put headers and status so filters can modify the response
-			HttpHeaders headers = new HttpHeaders();
+					// 获取服务响应对象
+					ServerHttpResponse response = exchange.getResponse();
+					// put headers and status so filters can modify the response
+					// 创建头信息
+					HttpHeaders headers = new HttpHeaders();
 
-			res.responseHeaders().forEach(entry -> headers.add(entry.getKey(), entry.getValue()));
+					// res的头信息数据移植
+					res.responseHeaders().forEach(entry -> headers.add(entry.getKey(), entry.getValue()));
 
-			String contentTypeValue = headers.getFirst(HttpHeaders.CONTENT_TYPE);
-			if (StringUtils.hasLength(contentTypeValue)) {
-				exchange.getAttributes().put(ORIGINAL_RESPONSE_CONTENT_TYPE_ATTR, contentTypeValue);
-			}
+					// 获取响应类型
+					String contentTypeValue = headers.getFirst(HttpHeaders.CONTENT_TYPE);
+					// 响应类型存在的情况下将其设置到exchange中
+					if (StringUtils.hasLength(contentTypeValue)) {
+						exchange.getAttributes()
+								.put(ORIGINAL_RESPONSE_CONTENT_TYPE_ATTR, contentTypeValue);
+					}
+					// 设置响应状态
+					setResponseStatus(res, response);
 
-			setResponseStatus(res, response);
+					// make sure headers filters run after setting status so it is
+					// available in response
+					// 通过成员变量headersFilters对头信息进行过滤
+					HttpHeaders filteredResponseHeaders = HttpHeadersFilter.filter(
+							getHeadersFilters(),
+							headers, exchange,
+							Type.RESPONSE);
+					// 过滤后的头信息中不包含Transfer-Encoding同时包含Content-Length需要移除Transfer-Encoding数据
+					if (!filteredResponseHeaders.containsKey(HttpHeaders.TRANSFER_ENCODING)
+							&& filteredResponseHeaders.containsKey(HttpHeaders.CONTENT_LENGTH)) {
+						// It is not valid to have both the transfer-encoding header and
+						// the content-length header.
+						// Remove the transfer-encoding header in the response if the
+						// content-length header is present.
+						response.getHeaders().remove(HttpHeaders.TRANSFER_ENCODING);
+					}
 
-			// make sure headers filters run after setting status so it is
-			// available in response
-			HttpHeaders filteredResponseHeaders = HttpHeadersFilter.filter(getHeadersFilters(), headers, exchange,
-					Type.RESPONSE);
+					// 设置CLIENT_RESPONSE_HEADER_NAMES数据，值为头信息中的键数据
+					exchange.getAttributes()
+							.put(CLIENT_RESPONSE_HEADER_NAMES, filteredResponseHeaders.keySet());
 
-			if (!filteredResponseHeaders.containsKey(HttpHeaders.TRANSFER_ENCODING)
-					&& filteredResponseHeaders.containsKey(HttpHeaders.CONTENT_LENGTH)) {
-				// It is not valid to have both the transfer-encoding header and
-				// the content-length header.
-				// Remove the transfer-encoding header in the response if the
-				// content-length header is present.
-				response.getHeaders().remove(HttpHeaders.TRANSFER_ENCODING);
-			}
+					// 响应对象中设置过滤后的头信息
+					response.getHeaders().putAll(filteredResponseHeaders);
 
-			exchange.getAttributes().put(CLIENT_RESPONSE_HEADER_NAMES, filteredResponseHeaders.keySet());
+					return Mono.just(res);
+				});
 
-			response.getHeaders().putAll(filteredResponseHeaders);
-
-			return Mono.just(res);
-		});
-
+		// 从路由对象中获取响应超时时间
 		Duration responseTimeout = getResponseTimeout(route);
+		// 响应超时时间不为空
 		if (responseTimeout != null) {
+			// 构造responseFlux数据
 			responseFlux = responseFlux
 					.timeout(responseTimeout,
-							Mono.error(new TimeoutException("Response took longer than timeout: " + responseTimeout)))
+							Mono.error(new TimeoutException(
+									"Response took longer than timeout: " + responseTimeout)))
 					.onErrorMap(TimeoutException.class,
-							th -> new ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, th.getMessage(), th));
+							th -> new ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT,
+									th.getMessage(), th));
 		}
 
 		return responseFlux.then(chain.filter(exchange));

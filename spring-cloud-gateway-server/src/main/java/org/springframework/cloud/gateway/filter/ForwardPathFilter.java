@@ -39,13 +39,21 @@ public class ForwardPathFilter implements GlobalFilter, Ordered {
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+		// 获取路由对象
 		Route route = exchange.getAttribute(GATEWAY_ROUTE_ATTR);
+		// 从路由对象中获取路由地址
 		URI routeUri = route.getUri();
+		// 从路由地址中获取方案
 		String scheme = routeUri.getScheme();
+		// 确认是否需要额外处理
+		// 1. 对象exchange中的gatewayAlreadyRouted属性为true。
+		// 2. 方案不是forward
 		if (isAlreadyRouted(exchange) || !"forward".equals(scheme)) {
 			return chain.filter(exchange);
 		}
-		exchange = exchange.mutate().request(exchange.getRequest().mutate().path(routeUri.getPath()).build()).build();
+		// 在exchange基础上对请求地址进行修正
+		exchange = exchange.mutate()
+				.request(exchange.getRequest().mutate().path(routeUri.getPath()).build()).build();
 		return chain.filter(exchange);
 	}
 

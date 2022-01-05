@@ -29,6 +29,7 @@ import org.springframework.web.server.ServerWebExchange;
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.CLIENT_RESPONSE_ATTR;
 
 /**
+ * 与web客户端相关的响应写出过滤器
  * @author Spencer Gibb
  */
 public class WebClientWriteResponseFilter implements GlobalFilter, Ordered {
@@ -49,21 +50,26 @@ public class WebClientWriteResponseFilter implements GlobalFilter, Ordered {
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 		// NOTICE: nothing in "pre" filter stage as CLIENT_RESPONSE_ATTR is not added
 		// until the WebHandler is run
-		return chain.filter(exchange).doOnError(throwable -> cleanup(exchange)).then(Mono.defer(() -> {
-			ClientResponse clientResponse = exchange.getAttribute(CLIENT_RESPONSE_ATTR);
-			if (clientResponse == null) {
-				return Mono.empty();
-			}
-			log.trace("WebClientWriteResponseFilter start");
-			ServerHttpResponse response = exchange.getResponse();
-
-			return response.writeWith(clientResponse.body(BodyExtractors.toDataBuffers()))
-					// .log("webClient response")
-					.doOnCancel(() -> cleanup(exchange));
-		}));
+		return chain.filter(exchange).doOnError(throwable -> cleanup(exchange))
+				.then(Mono.defer(() -> {
+					// 获取客户端响应对象
+					ClientResponse clientResponse = exchange.getAttribute(CLIENT_RESPONSE_ATTR);
+					// 如果客户端响应对象为空返回Mono的空对象
+					if (clientResponse == null) {
+						return Mono.empty();
+					}
+					log.trace("WebClientWriteResponseFilter start");
+					// 获取服务响应对象
+					ServerHttpResponse response = exchange.getResponse();
+					// 通过客户端响应对象包装后写出,结束后关闭客户端响应对象
+					return response.writeWith(clientResponse.body(BodyExtractors.toDataBuffers()))
+							// .log("webClient response")
+							.doOnCancel(() -> cleanup(exchange));
+				}));
 	}
 
 	private void cleanup(ServerWebExchange exchange) {
+		// 关闭客户端响应对象
 		ClientResponse clientResponse = exchange.getAttribute(CLIENT_RESPONSE_ATTR);
 		if (clientResponse != null) {
 			clientResponse.bodyToMono(Void.class).subscribe();

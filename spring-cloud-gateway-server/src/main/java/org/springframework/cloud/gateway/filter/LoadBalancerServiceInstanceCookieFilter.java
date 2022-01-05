@@ -38,6 +38,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.G
  * {@link ServiceInstance} selected by the {@link ReactiveLoadBalancerClientFilter} in a
  * cookie.
  *
+ * 负载均衡过滤器，带cookie
  * @author Olga Maciaszek-Sharma
  * @since 3.0.2
  */
@@ -51,21 +52,31 @@ public class LoadBalancerServiceInstanceCookieFilter implements GlobalFilter, Or
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-		Response<ServiceInstance> serviceInstanceResponse = exchange.getAttribute(GATEWAY_LOADBALANCER_RESPONSE_ATTR);
+		// 获取服务实例
+		Response<ServiceInstance> serviceInstanceResponse = exchange.getAttribute(
+				GATEWAY_LOADBALANCER_RESPONSE_ATTR);
+		// 如果服务实例对象为空或者服务实例对象中没有服务对象交给责任链处理
 		if (serviceInstanceResponse == null || !serviceInstanceResponse.hasServer()) {
 			return chain.filter(exchange);
 		}
-		String instanceIdCookieName = loadBalancerProperties.getStickySession().getInstanceIdCookieName();
+		// 通过负载均衡配置获取实例id的cookie名称
+		String instanceIdCookieName = loadBalancerProperties.getStickySession()
+				.getInstanceIdCookieName();
+		// 实例id的cookie名称为空交给责任链处理
 		if (!StringUtils.hasText(instanceIdCookieName)) {
 			return chain.filter(exchange);
 		}
-		ServerWebExchange newExchange = exchange.mutate().request(exchange.getRequest().mutate().headers((headers) -> {
-			List<String> cookieHeaders = new ArrayList<>(headers.getOrEmpty(HttpHeaders.COOKIE));
-			String serviceInstanceCookie = new HttpCookie(instanceIdCookieName,
-					serviceInstanceResponse.getServer().getInstanceId()).toString();
-			cookieHeaders.add(serviceInstanceCookie);
-			headers.put(HttpHeaders.COOKIE, cookieHeaders);
-		}).build()).build();
+		// 构造新的exchange对象再交给责任链处理
+		ServerWebExchange newExchange = exchange.mutate()
+				.request(exchange.getRequest().mutate().headers((headers) -> {
+
+					List<String> cookieHeaders = new ArrayList<>(
+							headers.getOrEmpty(HttpHeaders.COOKIE));
+					String serviceInstanceCookie = new HttpCookie(instanceIdCookieName,
+							serviceInstanceResponse.getServer().getInstanceId()).toString();
+					cookieHeaders.add(serviceInstanceCookie);
+					headers.put(HttpHeaders.COOKIE, cookieHeaders);
+				}).build()).build();
 		return chain.filter(newExchange);
 	}
 

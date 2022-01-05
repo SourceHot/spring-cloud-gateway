@@ -38,6 +38,7 @@ import org.springframework.web.server.ServerWebExchange;
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.CLIENT_RESPONSE_CONN_ATTR;
 
 /**
+ * Netty相关的写出响应的过滤器
  * @author Spencer Gibb
  */
 public class NettyWriteResponseFilter implements GlobalFilter, Ordered {
@@ -68,8 +69,10 @@ public class NettyWriteResponseFilter implements GlobalFilter, Ordered {
 		return chain.filter(exchange)
 				.doOnError(throwable -> cleanup(exchange))
 				.then(Mono.defer(() -> {
+					// 获取链接对象
 					Connection connection = exchange.getAttribute(CLIENT_RESPONSE_CONN_ATTR);
 
+					// 如果链接对象为空则返回空Mono对象
 					if (connection == null) {
 						return Mono.empty();
 					}
@@ -78,15 +81,18 @@ public class NettyWriteResponseFilter implements GlobalFilter, Ordered {
 								+ connection.channel().id().asShortText() + ", outbound: "
 								+ exchange.getLogPrefix());
 					}
+					// 获取响应对象
 					ServerHttpResponse response = exchange.getResponse();
 
 					// TODO: needed?
+					// 建立链接包装请求
 					final Flux<DataBuffer> body = connection
 							.inbound()
 							.receive()
 							.retain()
 							.map(byteBuf -> wrap(byteBuf, response));
 
+					// 确认媒体类型
 					MediaType contentType = null;
 					try {
 						contentType = response.getHeaders().getContentType();
@@ -96,6 +102,7 @@ public class NettyWriteResponseFilter implements GlobalFilter, Ordered {
 							log.trace("invalid media type", e);
 						}
 					}
+					// 如果媒体类型是流式的调用writeAndFlushWith，不是则调用writeWith
 					return (isStreamingMediaType(contentType)
 							? response.writeAndFlushWith(body.map(Flux::just))
 							: response.writeWith(body));
@@ -104,7 +111,9 @@ public class NettyWriteResponseFilter implements GlobalFilter, Ordered {
 	}
 
 	protected DataBuffer wrap(ByteBuf byteBuf, ServerHttpResponse response) {
+		// 获取数据缓冲工厂
 		DataBufferFactory bufferFactory = response.bufferFactory();
+		// 不同类型的缓冲工厂进行包装处理
 		if (bufferFactory instanceof NettyDataBufferFactory) {
 			NettyDataBufferFactory factory = (NettyDataBufferFactory) bufferFactory;
 			return factory.wrap(byteBuf);
@@ -120,7 +129,9 @@ public class NettyWriteResponseFilter implements GlobalFilter, Ordered {
 	}
 
 	private void cleanup(ServerWebExchange exchange) {
+		// 获取链接对象
 		Connection connection = exchange.getAttribute(CLIENT_RESPONSE_CONN_ATTR);
+		// 链接对象不为空，链接对象存活，链接非持久的情况下关闭
 		if (connection != null && connection.channel().isActive() && !connection.isPersistent()) {
 			connection.dispose();
 		}

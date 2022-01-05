@@ -55,6 +55,9 @@ public class GatewayNoLoadBalancerClientAutoConfiguration {
 		return new NoLoadBalancerClientFilter(properties.isUse404());
 	}
 
+	/**
+	 * 没有负载均衡客户端的过滤器
+	 */
 	protected static class NoLoadBalancerClientFilter implements GlobalFilter, Ordered {
 		/**
 		 * 是否使用404

@@ -35,6 +35,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.a
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.getUriTemplateVariables;
 
 /**
+ * 根据路由模板替换路由地址
  * @author Spencer Gibb
  */
 public class SetPathGatewayFilterFactory extends AbstractGatewayFilterFactory<SetPathGatewayFilterFactory.Config> {

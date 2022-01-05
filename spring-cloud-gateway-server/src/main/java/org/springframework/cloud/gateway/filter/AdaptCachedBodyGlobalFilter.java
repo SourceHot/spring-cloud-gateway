@@ -54,26 +54,34 @@ public class AdaptCachedBodyGlobalFilter implements GlobalFilter, Ordered, Appli
 		// the cached ServerHttpRequest is used when the ServerWebExchange can not be
 		// mutated, for example, during a predicate where the body is read, but still
 		// needs to be cached.
-		ServerHttpRequest cachedRequest = exchange.getAttributeOrDefault(CACHED_SERVER_HTTP_REQUEST_DECORATOR_ATTR,
+		// 获取缓存的服务请求对象
+		ServerHttpRequest cachedRequest = exchange.getAttributeOrDefault(
+				CACHED_SERVER_HTTP_REQUEST_DECORATOR_ATTR,
 				null);
+		// 服务请求对象不为空
 		if (cachedRequest != null) {
+			// 移除exchange中的服务请求对象
 			exchange.getAttributes().remove(CACHED_SERVER_HTTP_REQUEST_DECORATOR_ATTR);
+			// 责任链处理
 			return chain.filter(exchange.mutate().request(cachedRequest).build());
 		}
 
-		//
+		// 获取数据缓冲对象
 		DataBuffer body = exchange.getAttributeOrDefault(CACHED_REQUEST_BODY_ATTR, null);
+		// 获取路由对象
 		Route route = exchange.getAttribute(GATEWAY_ROUTE_ATTR);
-
+		// 数据缓冲对象不为空或者路由缓存中存在路由对象则交给责任链处理
 		if (body != null || !this.routesToCache.containsKey(route.getId())) {
 			return chain.filter(exchange);
 		}
-
+		// 处理最终结果
 		return ServerWebExchangeUtils.cacheRequestBody(exchange, (serverHttpRequest) -> {
 			// don't mutate and build if same request object
+			// 服务请求对象和exchange中的请求对象相同交给责任链处理
 			if (serverHttpRequest == exchange.getRequest()) {
 				return chain.filter(exchange);
 			}
+			// 组装新的请求后交给责任链处理
 			return chain.filter(exchange.mutate().request(serverHttpRequest).build());
 		});
 	}

@@ -207,16 +207,20 @@ public final class ServerWebExchangeUtils {
 	}
 
 	public static boolean containsEncodedParts(URI uri) {
+		// uri的query部分为空
+		// uri的query部分不包含百分号
+		// uri的地址不为空并且地址中不包含百分号
 		boolean encoded = (uri.getRawQuery() != null && uri.getRawQuery().contains("%"))
 				|| (uri.getRawPath() != null && uri.getRawPath().contains("%"));
 
 		// Verify if it is really fully encoded. Treat partial encoded as unencoded.
+		// 编码
 		if (encoded) {
 			try {
+				// 组装URI判断是否可以正常组装，如果不可以返回false，如果可以返回true。
 				UriComponentsBuilder.fromUri(uri).build(true);
 				return true;
-			}
-			catch (IllegalArgumentException ignored) {
+			} catch (IllegalArgumentException ignored) {
 				if (log.isTraceEnabled()) {
 					log.trace("Error in containsEncodedParts", ignored);
 				}

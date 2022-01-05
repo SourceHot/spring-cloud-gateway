@@ -51,6 +51,7 @@ public class RouteToRequestUrlFilter implements GlobalFilter, Ordered {
 
 	/* for testing */
 	static boolean hasAnotherScheme(URI uri) {
+		// 通过正则匹配并且host为空并且path为空
 		return schemePattern.matcher(uri.getSchemeSpecificPart()).matches() && uri.getHost() == null
 				&& uri.getRawPath() == null;
 	}
@@ -62,22 +63,30 @@ public class RouteToRequestUrlFilter implements GlobalFilter, Ordered {
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+		// 获取路由对象
 		Route route = exchange.getAttribute(GATEWAY_ROUTE_ATTR);
+		// 如果路由对象为空交给责任链处理
 		if (route == null) {
 			return chain.filter(exchange);
 		}
 		log.trace("RouteToRequestUrlFilter start");
+		// 从exchange中获取请求URI
 		URI uri = exchange.getRequest().getURI();
+		// 是否已经编码
 		boolean encoded = containsEncodedParts(uri);
+		// 从路由对象中获取URI
 		URI routeUri = route.getUri();
 
+		// 是否是特殊的方案
 		if (hasAnotherScheme(routeUri)) {
 			// this is a special url, save scheme to special attribute
 			// replace routeUri with schemeSpecificPart
+			// 设置方案信息
 			exchange.getAttributes().put(GATEWAY_SCHEME_PREFIX_ATTR, routeUri.getScheme());
+			// 构造routeUri对象
 			routeUri = URI.create(routeUri.getSchemeSpecificPart());
 		}
-
+		// 如果方案是lb并且host为空抛出异常
 		if ("lb".equalsIgnoreCase(routeUri.getScheme()) && routeUri.getHost() == null) {
 			// Load balanced URIs should always have a host. If the host is null it is
 			// most
@@ -85,10 +94,11 @@ public class RouteToRequestUrlFilter implements GlobalFilter, Ordered {
 			// underscore)
 			throw new IllegalStateException("Invalid host: " + routeUri.toString());
 		}
-
+		// 将请求URI和路由URI合并得到新的URI放入到exchange对象中
 		URI mergedUrl = UriComponentsBuilder.fromUri(uri)
 				// .uri(routeUri)
-				.scheme(routeUri.getScheme()).host(routeUri.getHost()).port(routeUri.getPort()).build(encoded).toUri();
+				.scheme(routeUri.getScheme()).host(routeUri.getHost()).port(routeUri.getPort())
+				.build(encoded).toUri();
 		exchange.getAttributes().put(GATEWAY_REQUEST_URL_ATTR, mergedUrl);
 		return chain.filter(exchange);
 	}

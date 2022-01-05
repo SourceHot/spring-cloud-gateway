@@ -61,9 +61,13 @@ public class ForwardRoutingFilter implements GlobalFilter, Ordered {
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+		// 获取GATEWAY_REQUEST_URL_ATTR属性
 		URI requestUrl = exchange.getRequiredAttribute(GATEWAY_REQUEST_URL_ATTR);
-
+		// 获取方案
 		String scheme = requestUrl.getScheme();
+		// 判断是否需要处理
+		// 1. 对象exchange中的gatewayAlreadyRouted属性为true。
+		// 2. 方案不是forward
 		if (isAlreadyRouted(exchange) || !"forward".equals(scheme)) {
 			return chain.filter(exchange);
 		}
@@ -73,7 +77,7 @@ public class ForwardRoutingFilter implements GlobalFilter, Ordered {
 		if (log.isTraceEnabled()) {
 			log.trace("Forwarding to URI: " + requestUrl);
 		}
-
+		// 通过DispatcherHandler进行请求处理
 		return this.getDispatcherHandler().handle(exchange);
 	}
 

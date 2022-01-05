@@ -91,21 +91,31 @@ public class WebsocketRoutingFilter implements GlobalFilter, Ordered {
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+		// 确认是否需要改变方案，核心改变的数据是GATEWAY_REQUEST_URL_ATTR
 		changeSchemeIfIsWebSocketUpgrade(exchange);
 
+		// 获取URI对象
 		URI requestUrl = exchange.getRequiredAttribute(GATEWAY_REQUEST_URL_ATTR);
+		// 从URI对象中获取方案
 		String scheme = requestUrl.getScheme();
 
+		// 1. 对象exchange中的gatewayAlreadyRouted属性为true。
+		// 2. 方案不是ws也不是wss
 		if (isAlreadyRouted(exchange) || (!"ws".equals(scheme) && !"wss".equals(scheme))) {
 			return chain.filter(exchange);
 		}
+		// 设置GATEWAY_ALREADY_ROUTED_ATTR属性为true。
 		setAlreadyRouted(exchange);
 
+		// 获取请求头信息
 		HttpHeaders headers = exchange.getRequest().getHeaders();
+		// 通过成员变量headersFilters过滤请求头信息
 		HttpHeaders filtered = filterRequest(getHeadersFilters(), exchange);
 
+		// 获取协议集合
 		List<String> protocols = getProtocols(headers);
 
+		// 通过WebSocket服务处理请求并返回
 		return this.webSocketService.handleRequest(exchange,
 				new ProxyWebSocketHandler(requestUrl, this.webSocketClient, filtered, protocols));
 	}
@@ -156,14 +166,25 @@ public class WebsocketRoutingFilter implements GlobalFilter, Ordered {
 
 	static void changeSchemeIfIsWebSocketUpgrade(ServerWebExchange exchange) {
 		// Check the Upgrade
+		// 提取请求URI
 		URI requestUrl = exchange.getRequiredAttribute(GATEWAY_REQUEST_URL_ATTR);
+		// 从请求URI对象中获取方案
 		String scheme = requestUrl.getScheme().toLowerCase();
+		// 从请求头中获取upgrade数据
 		String upgrade = exchange.getRequest().getHeaders().getUpgrade();
 		// change the scheme if the socket client send a "http" or "https"
-		if ("WebSocket".equalsIgnoreCase(upgrade) && ("http".equals(scheme) || "https".equals(scheme))) {
+
+		// 同时满足两个条件处理更新
+		if ("WebSocket".equalsIgnoreCase(upgrade) && ("http".equals(scheme) || "https".equals(
+				scheme))) {
+			// http转ws
 			String wsScheme = convertHttpToWs(scheme);
+			// 确认是否编码
 			boolean encoded = containsEncodedParts(requestUrl);
-			URI wsRequestUrl = UriComponentsBuilder.fromUri(requestUrl).scheme(wsScheme).build(encoded).toUri();
+			// 构造ws请求地址
+			URI wsRequestUrl = UriComponentsBuilder.fromUri(requestUrl).scheme(wsScheme)
+					.build(encoded).toUri();
+			// 将ws请求地址放入exchange对象中
 			exchange.getAttributes().put(GATEWAY_REQUEST_URL_ATTR, wsRequestUrl);
 			if (log.isTraceEnabled()) {
 				log.trace("changeSchemeTo:[" + wsRequestUrl + "]");
