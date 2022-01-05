@@ -39,12 +39,12 @@ public interface GatewayPredicate extends Predicate<ServerWebExchange> {
 	}
 
 	static GatewayPredicate wrapIfNeeded(Predicate<? super ServerWebExchange> other) {
+
 		GatewayPredicate right;
 
 		if (other instanceof GatewayPredicate) {
 			right = (GatewayPredicate) other;
-		}
-		else {
+		} else {
 			right = new GatewayPredicateWrapper(other);
 		}
 		return right;

@@ -75,9 +75,11 @@ public class PathRoutePredicateFactory extends AbstractRoutePredicateFactory<Pat
 
 	@Override
 	public Predicate<ServerWebExchange> apply(Config config) {
+		// 创建地址匹配器集合
 		final ArrayList<PathPattern> pathPatterns = new ArrayList<>();
 		synchronized (this.pathPatternParser) {
 			pathPatternParser.setMatchOptionalTrailingSeparator(config.isMatchTrailingSlash());
+			// 将配置类中的数据转化为PathPattern对象放入到地址匹配器集合中
 			config.getPatterns().forEach(pattern -> {
 				PathPattern pathPattern = this.pathPatternParser.parse(pattern);
 				pathPatterns.add(pathPattern);
@@ -86,8 +88,10 @@ public class PathRoutePredicateFactory extends AbstractRoutePredicateFactory<Pat
 		return new GatewayPredicate() {
 			@Override
 			public boolean test(ServerWebExchange exchange) {
+				// 获取请求地址
 				PathContainer path = parsePath(exchange.getRequest().getURI().getRawPath());
 
+				// 在地址匹配器集合中搜索正确的地址匹配器
 				PathPattern match = null;
 				for (int i = 0; i < pathPatterns.size(); i++) {
 					PathPattern pathPattern = pathPatterns.get(i);
@@ -97,13 +101,18 @@ public class PathRoutePredicateFactory extends AbstractRoutePredicateFactory<Pat
 					}
 				}
 
+				// 地址匹配器不为空
 				if (match != null) {
 					traceMatch("Pattern", match.getPatternString(), path, true);
+					// 解析地址匹配消息
 					PathMatchInfo pathMatchInfo = match.matchAndExtract(path);
+					// 将地址匹配消息放入到exchange对象中
 					putUriTemplateVariables(exchange, pathMatchInfo.getUriVariables());
 					return true;
 				}
+				// 地址匹配器为空返回false
 				else {
+					// 日志
 					traceMatch("Pattern", config.getPatterns(), path, false);
 					return false;
 				}

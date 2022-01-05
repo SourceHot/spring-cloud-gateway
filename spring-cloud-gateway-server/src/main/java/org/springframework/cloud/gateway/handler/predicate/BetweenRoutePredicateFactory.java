@@ -69,6 +69,7 @@ public class BetweenRoutePredicateFactory extends AbstractRoutePredicateFactory<
 				return String.format("Between: %s and %s", config.getDatetime1(), config.getDatetime2());
 			}
 		};
+
 	}
 
 	@Validated
