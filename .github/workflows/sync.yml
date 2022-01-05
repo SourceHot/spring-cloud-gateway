@@ -1,0 +1,13 @@
+name: Sync
+
+on:
+  push:
+    branches: [*]
+  workflow_dispatch:
+  
+- name: sync-gitee-mirror
+uses: abersheeran/sync-gitee-mirror@v1-beta
+with:
+  repository: source-hot/spring-cloud-gateway
+  username: ${{ secrets.USERNAME }}
+  password: ${{ secrets.PASSWORD }}
