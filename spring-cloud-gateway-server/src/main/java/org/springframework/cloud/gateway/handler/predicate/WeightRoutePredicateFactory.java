@@ -86,21 +86,25 @@ public class WeightRoutePredicateFactory extends AbstractRoutePredicateFactory<W
 		return new GatewayPredicate() {
 			@Override
 			public boolean test(ServerWebExchange exchange) {
+				// 获取权重信息
 				Map<String, String> weights = exchange.getAttributeOrDefault(WEIGHT_ATTR, Collections.emptyMap());
 
+				// 获取路由id
 				String routeId = exchange.getAttribute(GATEWAY_PREDICATE_ROUTE_ATTR);
 
 				// all calculations and comparison against random num happened in
 				// WeightCalculatorWebFilter
+				// 获取组别
 				String group = config.getGroup();
+				// 判断权重信息中是否包含组别
 				if (weights.containsKey(group)) {
-
+					// 获取组别对应的路由信息
 					String chosenRoute = weights.get(group);
 					if (log.isTraceEnabled()) {
 						log.trace("in group weight: " + group + ", current route: " + routeId + ", chosen route: "
 								+ chosenRoute);
 					}
-
+					// 返回路由id是否和路由信息相同
 					return routeId.equals(chosenRoute);
 				}
 				else if (log.isTraceEnabled()) {
