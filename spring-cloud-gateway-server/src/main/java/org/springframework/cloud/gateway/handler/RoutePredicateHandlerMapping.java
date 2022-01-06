@@ -76,6 +76,9 @@ public class RoutePredicateHandlerMapping extends AbstractHandlerMapping {
 	@Override
 	protected Mono<?> getHandlerInternal(ServerWebExchange exchange) {
 		// don't handle requests on management port if set and different than server port
+		// 1. 管理端口类型是DIFFERENT
+		// 2. 管理端口不为空
+		// 3. 请求对象中的端口和管理端口相同
 		if (this.managementPortType == DIFFERENT && this.managementPort != null
 				&& exchange.getRequest().getURI().getPort() == this.managementPort) {
 			return Mono.empty();
@@ -85,18 +88,26 @@ public class RoutePredicateHandlerMapping extends AbstractHandlerMapping {
 		// 寻找路由
 		return lookupRoute(exchange)
 				// .log("route-predicate-handler-mapping", Level.FINER) //name this
+				// 对寻找路由的结果进行处理
 				.flatMap((Function<Route, Mono<?>>) r -> {
+					// 从exchange对象中移除GATEWAY_PREDICATE_ROUTE_ATTR属性
 					exchange.getAttributes().remove(GATEWAY_PREDICATE_ROUTE_ATTR);
 					if (logger.isDebugEnabled()) {
 						logger.debug("Mapping [" + getExchangeDesc(exchange) + "] to " + r);
 					}
 
+					// 添加GATEWAY_ROUTE_ATTR属性
 					exchange.getAttributes().put(GATEWAY_ROUTE_ATTR, r);
+					// 返回webHandler对象
 					return Mono.just(webHandler);
-				}).switchIfEmpty(Mono.empty().then(Mono.fromRunnable(() -> {
+				})
+				// 寻找路由结果为空
+				.switchIfEmpty(Mono.empty().then(Mono.fromRunnable(() -> {
+					// 移除exchange对象中的GATEWAY_PREDICATE_ROUTE_ATTR属性
 					exchange.getAttributes().remove(GATEWAY_PREDICATE_ROUTE_ATTR);
 					if (logger.isTraceEnabled()) {
-						logger.trace("No RouteDefinition found for [" + getExchangeDesc(exchange) + "]");
+						logger.trace(
+								"No RouteDefinition found for [" + getExchangeDesc(exchange) + "]");
 					}
 				})));
 	}
@@ -121,35 +132,37 @@ public class RoutePredicateHandlerMapping extends AbstractHandlerMapping {
 	}
 
 	protected Mono<Route> lookupRoute(ServerWebExchange exchange) {
+		// 通过路由定位器（加载器）获取路由集合
 		return this.routeLocator.getRoutes()
 				// individually filter routes so that filterWhen error delaying is not a
 				// problem
 				.concatMap(route -> Mono.just(route).filterWhen(r -> {
-					// add the current route we are testing
-					exchange.getAttributes().put(GATEWAY_PREDICATE_ROUTE_ATTR, r.getId());
-					return r.getPredicate().apply(exchange);
-				})
+							// add the current route we are testing
+
+							// 向exchange中添加GATEWAY_PREDICATE_ROUTE_ATTR属性
+							exchange.getAttributes().put(GATEWAY_PREDICATE_ROUTE_ATTR, r.getId());
+							// 路由对象中的谓词处理
+							return r.getPredicate().apply(exchange);
+						})
 						// instead of immediately stopping main flux due to error, log and
 						// swallow it
-						.doOnError(e -> logger.error("Error applying predicate for route: " + route.getId(), e))
+						.doOnError(e -> logger.error(
+								"Error applying predicate for route: " + route.getId(), e))
 						.onErrorResume(e -> Mono.empty()))
 				// .defaultIfEmpty() put a static Route not found
 				// or .switchIfEmpty()
 				// .switchIfEmpty(Mono.<Route>empty().log("noroute"))
+
+				// 执行下一个路由对象的处理
 				.next()
-				// TODO: error handling
 				.map(route -> {
 					if (logger.isDebugEnabled()) {
 						logger.debug("Route matched: " + route.getId());
 					}
+					// 进行路由验证
 					validateRoute(route, exchange);
 					return route;
 				});
-
-		/*
-		 * TODO: trace logging if (logger.isTraceEnabled()) {
-		 * logger.trace("RouteDefinition did not match: " + routeDefinition.getId()); }
-		 */
 	}
 
 	/**
@@ -172,17 +185,19 @@ public class RoutePredicateHandlerMapping extends AbstractHandlerMapping {
 	public enum ManagementPortType {
 
 		/**
-		 * The management port has been disabled.
+		 * The management port has been disabled. 管理端口已被禁用。
 		 */
 		DISABLED,
 
 		/**
 		 * The management port is the same as the server port.
+		 * 管理端口与服务器端口相同
 		 */
 		SAME,
 
 		/**
 		 * The management port and server port are different.
+		 * 管理端口和服务器端口不同。
 		 */
 		DIFFERENT;
 
