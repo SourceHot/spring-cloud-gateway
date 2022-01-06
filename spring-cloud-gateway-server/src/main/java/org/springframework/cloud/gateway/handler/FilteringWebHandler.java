@@ -55,9 +55,14 @@ public class FilteringWebHandler implements WebHandler {
 		this.globalFilters = loadFilters(globalFilters);
 	}
 
+	/**
+	 * 加载网关过滤器
+	 */
 	private static List<GatewayFilter> loadFilters(List<GlobalFilter> filters) {
+		// 将输入的全局过滤器集合进行转换，
 		return filters.stream().map(filter -> {
 			GatewayFilterAdapter gatewayFilter = new GatewayFilterAdapter(filter);
+			// 实现了Ordered接口做OrderedGatewayFilter包装
 			if (filter instanceof Ordered) {
 				int order = ((Ordered) filter).getOrder();
 				return new OrderedGatewayFilter(gatewayFilter, order);
